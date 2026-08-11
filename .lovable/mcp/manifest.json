@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.2",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "campus-navigator-ufam",
+      "version": "0.1.0",
+      "title": "campus-navigator-ufam"
+    },
+    "tools": [
+      {
+        "name": "list_trails",
+        "title": "List campus trails",
+        "description": "List all mapped UFAM campus trails with their id, name, display color and number of mapped points.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_trail",
+        "title": "Get trail details",
+        "description": "Get one UFAM campus trail by id, including every mapped point (latitude, longitude and Mapillary street-view image id).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "trailId": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Trail id, e.g. `trail1`. Use `list_trails` to discover ids."
+            }
+          },
+          "required": [
+            "trailId"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "find_nearest_trail_point",
+        "title": "Find nearest trail point",
+        "description": "Find the closest mapped trail points to a latitude/longitude on the UFAM campus, with distance in meters.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lat": {
+              "type": "number",
+              "description": "Latitude in decimal degrees."
+            },
+            "lon": {
+              "type": "number",
+              "description": "Longitude in decimal degrees."
+            },
+            "limit": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 5,
+              "description": "How many nearby points to return."
+            }
+          },
+          "required": [
+            "lat",
+            "lon"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
