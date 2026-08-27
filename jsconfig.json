@@ -1,7 +1,14 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
-    }
-  }
+      "@/*": ["./src/*"],
+      "lib/*": ["./lib/*"]
+    },
+    "allowJs": true,
+    "strict": false,
+    "jsx": "react-jsx"
+  },
+  "include": ["src", "lib"],
+  "exclude": ["node_modules", "dist", ".git"]
 }
