@@ -3,10 +3,10 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { defineMcp } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { defineMcp } from "npm:@lovable.dev/mcp-js@0.26.3";
 
 // src/lib/mcp/tools/list-trails.ts
-import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.3";
 
 // src/utils/mapData.js
 var trailData = {
@@ -120,7 +120,7 @@ var list_trails_default = defineTool({
 });
 
 // src/lib/mcp/tools/get-trail.ts
-import { defineTool as defineTool2, ToolError } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { defineTool as defineTool2, ToolError } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z } from "npm:zod@^3.23.8";
 var get_trail_default = defineTool2({
   name: "get_trail",
@@ -142,7 +142,7 @@ var get_trail_default = defineTool2({
 });
 
 // src/lib/mcp/tools/find-nearest-point.ts
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.3";
 import { z as z2 } from "npm:zod@^3.23.8";
 function distanceMeters(aLat, aLon, bLat, bLon) {
   const R = 6371e3;
@@ -191,5 +191,5 @@ var mcp_default = defineMcp({
 });
 
 // lovable-mcp-supabase-entry.ts
-import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.26.2/stacks/supabase";
+import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.26.3/stacks/supabase";
 Deno.serve(createSupabaseHandler(mcp_default, { functionName: "mcp" }));

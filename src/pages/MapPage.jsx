@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -7,7 +7,7 @@ import ImageLayer from 'ol/layer/Image';
 import OSM from 'ol/source/OSM';
 import XYZ from 'ol/source/XYZ';
 import ImageWMS from 'ol/source/ImageWMS';
-import { fromLonLat, transform } from 'ol/proj';
+import { fromLonLat } from 'ol/proj';
 import { ScaleLine, Zoom, defaults as defaultControls } from 'ol/control';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -27,7 +27,7 @@ const MapPage = () => {
   const [wmsLayers, setWmsLayers] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
 
-  const basemaps = {
+  const basemaps = useMemo(() => ({
     osm: new TileLayer({ source: new OSM() }),
     satellite: new TileLayer({
       source: new XYZ({
@@ -42,13 +42,13 @@ const MapPage = () => {
         maxZoom: 19,
       }),
     }),
-  };
+  }), []);
 
-  const availableWmsLayers = [
-    { name: 'Árvores', layer: 'cmufam:arvores' },
-    { name: 'Edificações', layer: 'cmufam:edificacoes' },
+  const availableWmsLayers = useMemo(() => [
+    { name: 'Arvores', layer: 'cmufam:arvores' },
+    { name: 'Edificacoes', layer: 'cmufam:edificacoes' },
     { name: 'Vias', layer: 'cmufam:vias' },
-  ];
+  ], []);
 
   useEffect(() => {
     const initialMap = new Map({
@@ -103,7 +103,7 @@ const MapPage = () => {
     setWmsLayers(initialWmsLayers);
 
     return () => initialMap.setTarget(undefined);
-  }, []);
+  }, [basemaps, availableWmsLayers]);
 
   const changeBasemap = (basemapKey) => {
     if (map) {

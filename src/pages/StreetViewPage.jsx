@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Viewer } from 'mapillary-js';
 import mapboxgl from 'mapbox-gl';
 import 'mapillary-js/dist/mapillary.css';
@@ -14,7 +14,6 @@ const StreetViewPage = () => {
   const mapillaryContainerRef = useRef(null);
   const mapboxContainerRef = useRef(null);
   const [viewer, setViewer] = useState(null);
-  const [map, setMap] = useState(null);
   const [error, setError] = useState(null);
   const [currentImageId, setCurrentImageId] = useState('840083121440177');
 
@@ -51,7 +50,6 @@ const StreetViewPage = () => {
       mbx.addControl(scale);
 
       setViewer(mly);
-      setMap(mbx);
 
       // Add initial vector point
       mbx.on('load', () => {

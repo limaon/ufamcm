@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Viewer } from 'mapillary-js';
 import mapboxgl from 'mapbox-gl';
 import 'mapillary-js/dist/mapillary.css';

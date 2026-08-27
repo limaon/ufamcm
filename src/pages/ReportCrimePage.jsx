@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -11,13 +11,13 @@ import { Point } from 'ol/geom';
 import { Feature } from 'ol';
 import { Style, Circle, Fill, Stroke } from 'ol/style';
 import Overlay from 'ol/Overlay';
-import { Resizable } from 're-resizable';
+
 
 const ReportCrimePage = () => {
   const mapRef = useRef();
   const popupRef = useRef();
   const tooltipRef = useRef();
-  const [map, setMap] = useState(null);
+
   const [vectorSource, setVectorSource] = useState(null);
   const [crimeType, setCrimeType] = useState('');
   const [crimeTime, setCrimeTime] = useState('');
@@ -95,7 +95,6 @@ const ReportCrimePage = () => {
       }
     });
 
-    setMap(initialMap);
     setVectorSource(initialVectorSource);
 
     return () => initialMap.setTarget(undefined);
@@ -142,17 +141,7 @@ const ReportCrimePage = () => {
           }}
           onClick={handlePopupClick}
         >
-          <Resizable
-            defaultSize={{
-              width: 300,
-              height: 400,
-            }}
-            minWidth={200}
-            minHeight={300}
-            maxWidth={500}
-            maxHeight={600}
-          >
-            <div className="p-4 overflow-auto h-full">
+          <div className="p-4 overflow-auto" style={{ width: '300px', maxHeight: '400px' }}>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label htmlFor="crimeType" className="block text-sm font-medium text-gray-700">Tipo de Crime</label>
@@ -210,8 +199,7 @@ const ReportCrimePage = () => {
                   </button>
                 </div>
               </form>
-            </div>
-          </Resizable>
+          </div>
         </div>
         <div ref={tooltipRef} className="bg-white p-2 rounded shadow-md text-sm"></div>
       </div>

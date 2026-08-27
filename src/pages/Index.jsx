@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Link } from 'react-router-dom';
 import { MapPin, AlertTriangle, Map, Leaf, TreesIcon } from 'lucide-react';
 
