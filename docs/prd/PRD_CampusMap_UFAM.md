@@ -2,44 +2,52 @@
 
 > Documento de Requisitos de Produto (Product Requirements Document)
 > Fase 4 do fluxo de desenvolvimento (`docs/fases_desenvolvimento.md`).
->
 > **Status:** Rascunho (esqueleto) . **Versao:** 0.1 . **Ultima atualizacao:** _(preencher)_
-> **Nota:** Este PRD e **agnostico de stack**. Decisoes de tecnologia, camadas e
-> infraestrutura pertencem ao SPEC/Documento de Arquitetura, nao a este documento.
+> **Nota:** Este PRD e **agnostico de stack**. Decisoes de tecnologia, camadas e infraestrutura pertencem ao SPEC/Documento de Arquitetura, nao a este documento.
 
 ---
 
 ## 1. Visao Geral
 
-_Resumo executivo de uma pagina: o que e o produto, para quem, e por que agora._
+O Campus Map UFAM e uma plataforma web GIS (Sistema de Informacao Geografica) colaborativa para a Universidade Federal do Amazonas, campus Sen. Arthur Virgilio Filho. Ele centraliza e mantem atualizados os dados georreferenciados do campus - edificacoes, vias, arvores de interesse, trilhas e areas florestadas - permitindo que a comunidade academica visualize, explore e contribua com essas informacoes, sob curadoria de administradores. O campus tem ~670 hectares (62% cobertos por floresta) e ~15.000 membros na comunidade academica, o que o torna, ao mesmo tempo, um campus universitario de grande porte e um fragmento florestal urbano da APA Manaus com valor ambiental, cientifico e educacional.
 
 ### 1.1. Problema
 
-_A dor central. Ex.: calouros, visitantes e comunidade academica se perdem no
-campus; nao ha fonte centralizada e atualizada de dados georreferenciados da UFAM._
+Nao existe hoje uma fonte unica, atualizada e navegavel de dados georreferenciados do campus da UFAM. Isso gera duas dores complementares:
 
-- _Evidencia (relatorio 2020/2021): questionario com 34 respondentes apontou falta
-  de informacao sobre localizacao de predios, atividades e laboratorios._
-- _Evidencia: 84% dos respondentes declararam que usariam uma aplicacao do tipo._
+1. **Orientacao/wayfinding** - Calouros, visitantes e comunidade em geral se perdem e tem dificuldade para localizar predios, salas, laboratorios e trilhas.
+2. **Gestao do conhecimento espacial** - Dados de infraestrutura, patrimonio arboreo e areas florestais estao dispersos em relatorios, mapas estaticos e bases isoladas, sem forma sistematica de atualizacao colaborativa e curadoria.
+
+Evidencias:
+
+- Questionario aplicado na pesquisa (PIBIC 2020/2021, 34 respondentes): a maioria relatou pouca ou moderada informacao sobre localizacao de predios (30 de 34), atividades dos predios (19) e localizacao/atividade de laboratorios (22). ~84% dos respondentes declararam que instalariam/usariam uma aplicacao deste tipo, demonstrando demanda real da comunidade.
+- O problema e recorrente na literatura de campi: em Gombe State University (Nigeria), 70% dos estudantes relataram dificuldade para localizar predios apos renomeacoes; universidades como UFPR, UBC, ACC, Murdoch e ETH Zurich investiram em solucoes GIS de wayfinding justamente para reduzir a frustracao no inicio do semestre.
+- O historico do projeto (5 edicoes PIBIC, 2020-2025) produziu dados e protótipos validados, mas dispersos e sem uma plataforma unica de producao.
 
 ### 1.2. Solucao Proposta
 
-_Uma frase. Ex.: plataforma web GIS colaborativa para visualizar e contribuir com
-dados georreferenciados do campus, com curadoria por administradores._
+Uma plataforma web GIS colaborativa que reune, em um unico portal, a visualizacao interativa do campus (mapa 2D com camadas), a exploracao imersiva de trilhas (Street View / SVI) e do patrimonio arboreo (modelos 3D), e um fluxo de contribuicao colaborativa de features com aprovacao por curadores - transformando a pesquisa acumulada em uma ferramenta de uso continuo pela comunidade academica.
 
 ### 1.3. Objetivos e Nao-Objetivos
 
-| Tipo         | Item  |
-| ------------ | ----- |
-| Objetivo     | _..._ |
-| Nao-Objetivo | _..._ |
+| Tipo         | Item                                                                       |
+| ------------ | -------------------------------------------------------------------------- |
+| Objetivo     | Prover fonte unica e navegavel de dados georreferenciados do campus        |
+| Objetivo     | Reduzir a dificuldade de orientacao/localizacao no campus                  |
+| Objetivo     | Permitir contribuicao colaborativa de dados com curadoria (qualidade)      |
+| Objetivo     | Preservar e divulgar o patrimonio arboreo (AHPICE) e as trilhas florestais |
+| Objetivo     | Consolidar a pesquisa PIBIC 2020-2025 em um produto de producao mantivel   |
+| Nao-Objetivo | Navegacao/roteamento indoor em tempo real (posicionamento por Wi-Fi/IPS)   |
+| Nao-Objetivo | Calculo de rotas turn-by-turn (fica para fase posterior)                   |
+| Nao-Objetivo | App mobile nativo (o alvo do MVP e web responsivo)                         |
+| Nao-Objetivo | Registro de ocorrencias de seguranca (crime reporting) no MVP              |
+| Nao-Objetivo | Substituir sistemas oficiais de gestao/ensalamento da UFAM                 |
 
 ---
 
 ## 2. Contexto e Motivacao
 
-_Historico do projeto (iniciativa Campus Map, origem UFPR 2014/2017, adaptacao UFAM
-desde 2020). Consolida a pesquisa PIBIC de 2020 a 2025 num produto real._
+_Historico do projeto (iniciativa Campus Map, origem UFPR 2014/2017, adaptacao UFAM desde 2020). Consolida a pesquisa PIBIC de 2020 a 2025 num produto real._
 
 | Ano       | Foco PIBIC                     | Entrega validada                                            |
 | --------- | ------------------------------ | ----------------------------------------------------------- |
@@ -64,15 +72,38 @@ _Detalhar necessidades, contexto de uso e criterio de sucesso por persona._
 
 ### 3.1. Detalhamento por persona
 
-_(preencher: objetivos, frustracoes, jornada, dispositivo de uso)_
+#### Persona A - Calouro / Visitante (perfil Publico)
+
+- **Quem e:** estudante ingressante ou visitante externo, primeira vez no campus. Ex.: calouro de Engenharia Florestal no primeiro dia de aula.
+- **Objetivos:** achar seu predio/sala rapidamente; entender a dimensao do campus; conhecer trilhas e pontos de interesse.
+- **Frustracoes:** campus grande (670 ha) e arborizado, sinalizacao fisica limitada, nomes de predios pouco intuitivos, chegar atrasado/estressado na primeira semana.
+- **Jornada tipica:** abre o mapa -> busca/navega ate o predio -> clica na feature -> ve nome, tipo e descricao no popup.
+- **Dispositivo:** predominantemente celular no local; desktop no planejamento previo.
+- **Sucesso para a persona:** localizar o destino sem pedir ajuda presencial.
+
+#### Persona B - Pesquisador / Editor (perfil Editor)
+
+- **Quem e:** bolsista PIBIC, professor ou tecnico do LabGeo/DCF que coleta e mantem dados espaciais (arvores, parcelas, trilhas, edificacoes).
+- **Objetivos:** cadastrar e atualizar features georreferenciadas com atributos; contribuir de forma continua para a base do campus.
+- **Frustracoes:** hoje os dados vivem em relatorios e bases isoladas; retrabalho e perda de dados entre edicoes PIBIC; falta de um fluxo unico de contribuicao.
+- **Jornada tipica:** login -> desenha ponto/linha/poligono -> classifica e preenche atributos -> submete (fica pendente de aprovacao).
+- **Dispositivo:** desktop (edicao); celular em campo para coleta (SVI via Mapillary).
+- **Sucesso para a persona:** contribuicao submetida e, apos curadoria, publicada.
+
+#### Persona C - Gestor / Curador (perfil Administrador)
+
+- **Quem e:** coordenador do projeto / administrador designado (ex.: LabGeo, prefeitura do campus) responsavel pela qualidade e governanca dos dados.
+- **Objetivos:** garantir qualidade e consistencia dos dados publicados; gerenciar quem pode contribuir; manter a base confiavel.
+- **Frustracoes:** risco de dados incorretos/duplicados sem processo de revisao; falta de controle sobre contribuidores.
+- **Jornada tipica:** login -> painel de pendentes -> revisa feature -> aprova ou rejeita (com justificativa); gerencia contas de editores.
+- **Dispositivo:** desktop.
+- **Sucesso para a persona:** fila de pendentes sob controle; base publicada confiavel.
 
 ---
 
 ## 4. Escopo do MVP
 
-Principio: o MVP entrega a **cadeia de valor completa** - visualizar dados
-georreferenciados + contribuir de forma colaborativa com curadoria - reaproveitando
-os modulos ja validados com usuarios na pesquisa PIBIC.
+Principio: o MVP entrega a **cadeia de valor completa** - visualizar dados georreferenciados + contribuir de forma colaborativa com curadoria - reaproveitando os modulos ja validados com usuarios na pesquisa PIBIC.
 
 ### 4.1. Dentro do MVP
 
@@ -99,8 +130,7 @@ os modulos ja validados com usuarios na pesquisa PIBIC.
 
 ## 5. Requisitos Funcionais (MVP)
 
-_Priorizados (MoSCoW: Must / Should / Could). Rastreabilidade com os RFxxx do
-Documento V4 quando aplicavel._
+_Priorizados (MoSCoW: Must / Should / Could). Rastreabilidade com os RFxxx do Documento V4 quando aplicavel._
 
 | ID    | Prioridade | Modulo  | Requisito                                             | Rastreio V4 |
 | ----- | ---------- | ------- | ----------------------------------------------------- | ----------- |
@@ -150,12 +180,40 @@ _Descrever os fluxos chave (pode virar diagrama no SPEC)._
 
 ## 8. Metricas de Sucesso
 
-_Como saberemos que o MVP deu certo. Ex.: nº de features aprovadas, usuarios ativos,
-tempo medio para localizar um ponto, taxa de adesao da comunidade._
+Como saberemos que o MVP deu certo. Metas iniciais - devem ser calibradas apos o lancamento. Benchmarks de referencia extraidos de casos comparaveis (ver Apendice B).
 
-| Metrica | Meta MVP |
-| ------- | -------- |
-| _..._   | _..._    |
+### 8.1. Adocao e uso
+
+| Metrica                                       | Meta MVP inicial                                      | Benchmark de referencia                                       |
+| --------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------- |
+| Usuarios unicos no 1o semestre                | _(definir)_                                           | UBC: 210k+ usuarios unicos / 400k+ sessoes desde 2023         |
+| Pico de usuarios diarios (inicio de semestre) | _(definir)_                                           | UBC: ~5.000/dia em set. e jan.; ACC: ~4.000 acessos no 1o dia |
+| Adesao declarada da comunidade                | referencia: ~84% de intencao de uso (PIBIC 2020/2021) | -                                                             |
+
+### 8.2. Eficacia (wayfinding)
+
+| Metrica                                                        | Meta MVP inicial                 | Benchmark de referencia                               |
+| -------------------------------------------------------------- | -------------------------------- | ----------------------------------------------------- |
+| Taxa de sucesso ao localizar um destino (teste de usabilidade) | >= 85%                           | OAUSTECH: 87% satisfacao; GSU: 85-99% de sucesso      |
+| Reducao de duvidas de navegacao na 1a semana                   | reducao perceptivel vs. baseline | Murdoch: reducao significativa reportada por servicos |
+| Tempo medio para localizar um ponto no mapa                    | _(definir baseline e meta)_      | -                                                     |
+
+### 8.3. Colaboracao e curadoria
+
+| Metrica                                         | Meta MVP inicial | Observacao                           |
+| ----------------------------------------------- | ---------------- | ------------------------------------ |
+| Nº de features submetidas por editores          | _(definir)_      | Indica engajamento de contribuidores |
+| Nº de features aprovadas / publicadas           | _(definir)_      | Indica crescimento util da base      |
+| Taxa de aprovacao (aprovadas / submetidas)      | acompanhar       | Proxy de qualidade das contribuicoes |
+| Tempo medio de curadoria (submissao -> decisao) | _(definir SLA)_  | Saude da fila de pendentes           |
+
+### 8.4. Qualidade tecnica (deriva dos RNFs)
+
+| Metrica                                | Meta MVP inicial              |
+| -------------------------------------- | ----------------------------- |
+| Tempo ate mapa interativo              | < 3s (conexao 10 Mbps)        |
+| Tempo de resposta de consultas simples | < 500ms                       |
+| Disponibilidade do servico             | _(definir SLA com CTIC/UFAM)_ |
 
 ---
 
@@ -187,6 +245,19 @@ tempo medio para localizar um ponto, taxa de adesao da comunidade._
 
 ## Apendice B - Referencias
 
+### Documentos internos
+
 - `docs/doc-original/` - Relatorios PIBIC 2020-2025
 - `docs/doc-original/Documento_de_Requisitos_e_Arquitetura_CampusMap_V4_2026.md`
 - `docs/fases_desenvolvimento.md`
+
+### Referencias externas (benchmarks e contexto)
+
+- UFPR CampusMap (projeto de origem, 2014/2017): https://campusmap.ufpr.br/ - base cartografica indoor/outdoor, rotas, PostgreSQL/PostGIS, evolucao para Smart Campus.
+- UFPR CampusMap 2.0 - Desafios para implantacao de um Smart Campus (Delazari et al., 2025).
+- UBC Campus Navigation (ESRI, 2026): wayfinding acessivel; ~5.000 usuarios/dia em pico, 210k+ usuarios unicos, 90k+ rotas geradas.
+- Austin Community College - Indoor GIS wayfinding (ArcUser, 2025): ~4.000 acessos no 1o dia.
+- Murdoch University Wayfinder (NGIS, 2024): reducao de duvidas de navegacao na 1a semana.
+- OAUSTECH GIS campus navigation (Nigeria): 87% de satisfacao, rotas < 2s.
+- GSU Connect - Gombe State University (2025): >70% relataram dificuldade de localizacao; taxa de sucesso 85-99% no piloto.
+- ETH Zurich Smart Campus (Indoor GIS, 2024): wayfinding barrier-free / digital twin.
