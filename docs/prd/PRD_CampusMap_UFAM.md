@@ -2,7 +2,7 @@
 
 > Documento de Requisitos de Produto (Product Requirements Document)
 > Fase 4 do fluxo de desenvolvimento (`docs/fases_desenvolvimento.md`).
-> **Status:** Rascunho (esqueleto) . **Versao:** 0.1 . **Ultima atualizacao:** _(preencher)_
+> **Status:** Rascunho para revisao . **Versao:** 0.2 . **Ultima atualizacao:** 2026-09-01
 > **Nota:** Este PRD e **agnostico de stack**. Decisoes de tecnologia, camadas e infraestrutura pertencem ao SPEC/Documento de Arquitetura, nao a este documento.
 
 ---
@@ -22,7 +22,7 @@ Evidencias:
 
 - Questionario aplicado na pesquisa (PIBIC 2020/2021, 34 respondentes): a maioria relatou pouca ou moderada informacao sobre localizacao de predios (30 de 34), atividades dos predios (19) e localizacao/atividade de laboratorios (22). ~84% dos respondentes declararam que instalariam/usariam uma aplicacao deste tipo, demonstrando demanda real da comunidade.
 - O problema e recorrente na literatura de campi: em Gombe State University (Nigeria), 70% dos estudantes relataram dificuldade para localizar predios apos renomeacoes; universidades como UFPR, UBC, ACC, Murdoch e ETH Zurich investiram em solucoes GIS de wayfinding justamente para reduzir a frustracao no inicio do semestre.
-- O historico do projeto (5 edicoes PIBIC, 2020-2025) produziu dados e protótipos validados, mas dispersos e sem uma plataforma unica de producao.
+- O historico do projeto (5 edicoes PIBIC, 2020-2025) produziu dados e prototipos validados, mas dispersos e sem uma plataforma unica de producao.
 
 ### 1.2. Solucao Proposta
 
@@ -47,12 +47,12 @@ Uma plataforma web GIS colaborativa que reune, em um unico portal, a visualizaca
 
 ## 2. Contexto e Motivacao
 
-_Historico do projeto (iniciativa Campus Map, origem UFPR 2014/2017, adaptacao UFAM desde 2020). Consolida a pesquisa PIBIC de 2020 a 2025 num produto real._
+O Campus Map nasceu na Universidade Federal do Parana (UFPR), iniciado em 2014 a partir de uma necessidade da prefeitura do campus e evoluindo para pesquisa em mapeamento indoor/outdoor. A adaptacao para a UFAM comecou em 2020 e, ao longo de 5 edicoes PIBIC (2020-2025), acumulou modelagem de dados, prototipos e modulos validados com usuarios. Este PRD consolida essa pesquisa em um produto real e mantivel. As entregas validadas por edicao:
 
 | Ano       | Foco PIBIC                     | Entrega validada                                            |
 | --------- | ------------------------------ | ----------------------------------------------------------- |
 | 2020/2021 | Modelagem e Requisitos         | Documento de requisitos + modelagem UML + aerofotogrametria |
-| 2021/2022 | Projeto e Modelagem de Dados   | Modelo indoor/outdoor + protótipo + base Mapillary          |
+| 2021/2022 | Projeto e Modelagem de Dados   | Modelo indoor/outdoor + prototipo + base Mapillary          |
 | 2022/2023 | Realidade Aumentada (SVI)      | Interface 2D+SVI + teste com 12 usuarios                    |
 | 2023/2024 | Interface integrada Campus Map | Site publicado (mapa + camadas WMS)                         |
 | 2023/2024 | Modelagem de Arvores           | Modelos 3D de arvores AHPICE                                |
@@ -62,7 +62,7 @@ _Historico do projeto (iniciativa Campus Map, origem UFPR 2014/2017, adaptacao U
 
 ## 3. Personas e Perfis de Usuario
 
-_Detalhar necessidades, contexto de uso e criterio de sucesso por persona._
+O sistema atende tres perfis de acesso, alinhados ao RBAC do produto (publico, editor, administrador). Visao resumida e, na sequencia, o detalhamento de cada persona.
 
 | Persona              | Perfil de acesso      | Necessidade principal               |
 | -------------------- | --------------------- | ----------------------------------- |
@@ -111,10 +111,10 @@ Principio: o MVP entrega a **cadeia de valor completa** - visualizar dados georr
 | --- | ------------------------------ | -------------------------------------------------------------------------------- | ---------------- |
 | 1   | Mapa Principal                 | Mapa interativo, basemaps (OSM/Satelite), camadas WMS, popup e toggle de camadas | 2023/2024        |
 | 2   | Autenticacao e RBAC            | Login, 3 perfis (Publico/Editor/Admin)                                           | Doc V4           |
-| 3   | Edicao de Features + Aprovacao | Desenhar ponto/linha/poligono, classificar, status pending                       | Doc V4           |
+| 3   | Edicao de Features + Aprovacao | Desenhar ponto/linha/poligono, classificar (ate 22 tipos), status pending        | Doc V4           |
 | 4   | Administracao                  | Painel de aprovacao/rejeicao, gestao de usuarios                                 | Doc V4           |
-| 5   | Trilhas + Street View          | Trilhas no mapa + visualizador SVI (360) sequencial                              | 2024/2025        |
-| 6   | Arvores e 3D                   | Especies AHPICE, localizacao no mapa + modelo 3D                                 | 2023/2024        |
+| 5   | Trilhas + Street View          | 7 trilhas da Reserva Florestal no mapa + visualizador SVI (360) sequencial       | 2024/2025        |
+| 6   | Arvores e 3D                   | 8 especies AHPICE, localizacao no mapa + modelo 3D                               | 2023/2024        |
 
 ### 4.2. Fora do MVP (fases posteriores)
 
@@ -130,7 +130,7 @@ Principio: o MVP entrega a **cadeia de valor completa** - visualizar dados georr
 
 ## 5. Requisitos Funcionais (MVP)
 
-_Priorizados (MoSCoW: Must / Should / Could). Rastreabilidade com os RFxxx do Documento V4 quando aplicavel._
+Requisitos priorizados por MoSCoW (Must / Should / Could). A coluna "Rastreio V4" liga cada item ao requisito correspondente do Documento de Requisitos e Arquitetura V4 (mapeamento por conteudo/semantica).
 
 | ID    | Prioridade | Modulo  | Requisito                                             | Rastreio V4 |
 | ----- | ---------- | ------- | ----------------------------------------------------- | ----------- |
@@ -138,7 +138,7 @@ _Priorizados (MoSCoW: Must / Should / Could). Rastreabilidade com os RFxxx do Do
 | RF-02 | Must       | Mapa    | Carregar camadas WMS (Arvores, Edificacoes, Vias)     | RF002       |
 | RF-03 | Must       | Mapa    | Popup de feature (nome, tipo, descricao, responsavel) | RF003       |
 | RF-04 | Should     | Mapa    | Ativar/desativar camadas                              | RF004       |
-| RF-05 | Must       | Auth    | Login por credenciais + protecao por perfil           | RF020       |
+| RF-05 | Must       | Auth    | Login por credenciais + protecao por perfil           | RF020/RF024 |
 | RF-06 | Must       | Edicao  | Desenhar ponto/linha/poligono                         | RF006       |
 | RF-07 | Must       | Edicao  | Classificar feature + atributos                       | RF007       |
 | RF-08 | Must       | Edicao  | Fluxo de aprovacao (status pending)                   | RF008       |
@@ -153,8 +153,7 @@ _Priorizados (MoSCoW: Must / Should / Could). Rastreabilidade com os RFxxx do Do
 
 ## 6. Requisitos Nao Funcionais (MVP)
 
-_Metas mensuraveis. Referencia aos RNFxxx do Documento V4. Manter agnostico de
-implementacao - "o que", nao "como"._
+Metas mensuraveis, agnosticas de implementacao ("o que", nao "como"). O detalhamento tecnico correspondente esta nos RNFxxx do Documento V4.
 
 | Categoria       | Meta                                                                        |
 | --------------- | --------------------------------------------------------------------------- |
@@ -169,7 +168,7 @@ implementacao - "o que", nao "como"._
 
 ## 7. Fluxos de Usuario Principais
 
-_Descrever os fluxos chave (pode virar diagrama no SPEC)._
+Os quatro fluxos-chave do MVP (podem ser detalhados como diagramas no SPEC):
 
 1. **Visualizacao publica** - Usuario abre o mapa -> navega -> clica em feature -> ve popup.
 2. **Contribuicao (Editor)** - Login -> desenha feature -> classifica -> submete (pending).
@@ -202,8 +201,8 @@ Como saberemos que o MVP deu certo. Metas iniciais - devem ser calibradas apos o
 
 | Metrica                                         | Meta MVP inicial | Observacao                           |
 | ----------------------------------------------- | ---------------- | ------------------------------------ |
-| Nº de features submetidas por editores          | _(definir)_      | Indica engajamento de contribuidores |
-| Nº de features aprovadas / publicadas           | _(definir)_      | Indica crescimento util da base      |
+| No. de features submetidas por editores         | _(definir)_      | Indica engajamento de contribuidores |
+| No. de features aprovadas / publicadas          | _(definir)_      | Indica crescimento util da base      |
 | Taxa de aprovacao (aprovadas / submetidas)      | acompanhar       | Proxy de qualidade das contribuicoes |
 | Tempo medio de curadoria (submissao -> decisao) | _(definir SLA)_  | Saude da fila de pendentes           |
 
@@ -219,17 +218,34 @@ Como saberemos que o MVP deu certo. Metas iniciais - devem ser calibradas apos o
 
 ## 9. Riscos e Dependencias
 
-| Risco / Dependencia                                                | Impacto | Mitigacao |
-| ------------------------------------------------------------------ | ------- | --------- |
-| Disponibilizacao de servidor pela UFAM (historico de atraso, CTIC) | Alto    | _..._     |
-| Dependencia de servicos externos (Mapillary, Mapbox, GeoServer)    | Medio   | _..._     |
-| Qualidade das imagens SVI coletadas                                | Medio   | _..._     |
+Riscos priorizados por probabilidade x impacto. Varios sao **licoes aprendidas** de edicoes anteriores da pesquisa (ver Apendice B), o que aumenta sua probabilidade e a importancia da mitigacao.
+
+| #   | Risco / Dependencia                                               | Prob. | Impacto             | Evidencia historica                                                                                                                                                 | Mitigacao                                                                                                                                                                      |
+| --- | ----------------------------------------------------------------- | ----- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| R1  | Disponibilizacao de servidor/infra pela UFAM (CTIC)               | Alta  | Alto                | Em 2023/2024, o nao atendimento da demanda pelo CTIC-UFAM prejudicou o cronograma e impediu testes com usuarios; o projeto recorreu a AWS (plano gratuito de 1 ano) | Formalizar demanda de infra com o CTIC cedo (o Doc V4 ja e dirigido a eles); manter opcao de nuvem como contingencia; sistema containerizado para ser portavel entre ambientes |
+| R2  | Testes/uso bloqueados dentro da rede UFAM (IP estatico)           | Media | Alto                | Com a solucao AWS, o IP estatico impossibilitou testes dentro do LabGeo/FCA e da rede UFAM                                                                          | Validar acesso pela rede interna cedo; alinhar liberacao de dominio/porta com CTIC antes de agendar testes com usuarios                                                        |
+| R3  | Backup e persistencia dependentes de politica do CTIC             | Media | Alto                | RNF015 (Doc V4) condiciona a politica de backup ao CTIC                                                                                                             | Definir e acordar politica de backup/retencao antes do go-live; nao tratar como opcional                                                                                       |
+| R4  | Baixa participacao da comunidade / poucos contribuidores          | Media | Medio               | Engajamento da comunidade citado como desafio desde 2020/2021 (agravado pela pandemia)                                                                              | Divulgacao institucional; onboarding simples para editores; comecar com curadoria de um nucleo (LabGeo/DCF)                                                                    |
+| R5  | Dependencia de servicos externos (Mapillary, GeoServer, basemaps) | Media | Medio               | Trilhas/SVI dependem do Mapillary; camadas dependem do GeoServer                                                                                                    | Isolar integracoes atras de uma camada propria; ter fallback de basemap; documentar versoes/limites de uso                                                                     |
+| R6  | Qualidade das imagens SVI coletadas                               | Media | Medio               | Em 2024/2025, parte das imagens ficou borrada (percurso acelerado, terreno irregular, cameras diversas)                                                             | Padrao de coleta (estabilizador, ritmo, orientacao horizontal); revisao de qualidade antes de publicar                                                                         |
+| R7  | Imprecisao de GPS/posicionamento indoor                           | Alta  | Baixo (fora do MVP) | Coordenadas imprecisas em ambientes internos (concreto, poucos satelites) em 2022/2023                                                                              | Fora do escopo do MVP (nao-objetivo); tratar em fase futura com tecnica adequada de posicionamento                                                                             |
+| R8  | Divergencia/perda de dados entre edicoes da pesquisa              | Media | Medio               | Dados historicamente dispersos em relatorios e bases isoladas                                                                                                       | O proprio produto (base unica + curadoria) mitiga; migrar/consolidar dados validados na base oficial                                                                           |
 
 ---
 
 ## 10. Questoes em Aberto
 
-- _..._
+Decisoes pendentes que precisam de resposta antes ou durante o SPEC. Nao bloqueiam o esqueleto do PRD, mas devem ser resolvidas com os stakeholders (CTIC, LabGeo/DCF, coordenacao).
+
+| #   | Questao                                                                            | Depende de  | Impacto se nao resolvida             |
+| --- | ---------------------------------------------------------------------------------- | ----------- | ------------------------------------ |
+| Q1  | O CTIC-UFAM disponibilizara servidor/infra propria ou o MVP ira para nuvem?        | CTIC        | Define hospedagem, custo e R1/R2     |
+| Q2  | Qual a politica de backup/retencao acordada (RNF015)?                              | CTIC        | Define R3 e o SLA de disponibilidade |
+| Q3  | Quais sao as metas numericas de adocao/uso (secao 8)?                              | Coordenacao | Metricas de sucesso ficam sem alvo   |
+| Q4  | Quem sao os curadores iniciais e como sera o onboarding de editores?               | LabGeo/DCF  | Governanca dos dados (R4)            |
+| Q5  | Quais dados historicos validados serao migrados para a base oficial no lancamento? | Equipe/DCF  | Volume inicial de conteudo (R8)      |
+| Q6  | Sera necessario suporte a telas < 1024px (mobile) ja no MVP?                       | Coordenacao | Escopo de responsividade (RNF021)    |
+| Q7  | Ha requisito de acessibilidade formal (ex.: WCAG) para o MVP?                      | Coordenacao | Escopo de usabilidade/inclusao       |
 
 ---
 
@@ -238,8 +254,12 @@ Como saberemos que o MVP deu certo. Metas iniciais - devem ser calibradas apos o
 | Termo   | Definicao                                                                                  |
 | ------- | ------------------------------------------------------------------------------------------ |
 | AHPICE  | Arvores de importancia Ambiental, Historica, Patrimonios Imateriais, Culturais e Ecologica |
+| APA     | Area de Protecao Ambiental                                                                 |
+| CTIC    | Centro de Tecnologia da Informacao e Comunicacao da UFAM                                   |
 | Feature | Elemento geoespacial (ponto, linha, poligono) com atributos                                |
-| RBAC    | Controle de acesso baseado em papeis                                                       |
+| MoSCoW  | Metodo de priorizacao: Must, Should, Could, Won't have                                     |
+| MVP     | Minimum Viable Product - produto minimo viavel                                             |
+| RBAC    | Controle de acesso baseado em papeis (Role-Based Access Control)                           |
 | SVI     | Street View Imagery - imagens ao nivel da rua                                              |
 | WMS     | Web Map Service - protocolo OGC para servir mapas                                          |
 
