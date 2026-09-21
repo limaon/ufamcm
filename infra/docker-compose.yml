@@ -1,0 +1,20 @@
+services:
+  database:
+    image: postgis/postgis:16-3.4
+    container_name: campus-map-database
+    environment:
+      POSTGRES_DB: campus_map
+      POSTGRES_USER: campus
+      POSTGRES_PASSWORD: campus
+    ports:
+      - '5432:5432'
+    volumes:
+      - campus-map-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U campus -d campus_map']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  campus-map-postgres:

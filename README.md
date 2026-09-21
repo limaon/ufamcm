@@ -1,59 +1,29 @@
-# UFAM Campus Navigator
+# Campus Map UFAM
 
-Web application for navigating the Federal University of Amazonas (UFAM) campus with interactive mapping, street view, trail exploration, and crime reporting features.
+Plataforma web GIS colaborativa do campus Sen. Arthur Virgílio Filho.
 
-## Technologies
+## Requisitos
 
-- React 18.2.0
-- Vite 5.1.4
-- Tailwind CSS 3.4.4
-- Mapbox GL 3.7.0
-- Supabase (PostgreSQL)
-- React Hook Form
-- Zod validation
+- Node.js 20+
+- npm 10+
+- Docker e Docker Compose
 
-## Setup
+## Instalação
 
-Install dependencies:
 ```bash
 npm install
+cp .env.example .env
+docker compose -f infra/docker-compose.yml up -d
 ```
 
-Start development server:
+## Desenvolvimento
+
 ```bash
 npm run dev
 ```
 
-Build for production:
-```bash
-npm run build
-```
+- Frontend: http://localhost:3000
+- API: http://localhost:3001/health
+- Banco: localhost:5432
 
-## Project Structure
-
-src/
-  components/   - UI components
-  pages/        - Page components
-  lib/          - Utilities and MCP integration
-  integrations/ - Supabase client and types
-  hooks/        - Custom React hooks
-  context/      - React context providers
-  constants/    - Application constants
-  types/        - Type definitions
-  config/       - Configuration files
-
-## Environment
-
-Create .env file with:
-```
-VITE_SUPABASE_URL=your_url
-VITE_SUPABASE_ANON_KEY=your_key
-VITE_MAPBOX_TOKEN=your_token
-```
-
-## Scripts
-
-- npm run dev       - Start development server
-- npm run build     - Build for production
-- npm run preview   - Preview production build
-- npm run lint      - Run ESLint
+Este commit contém apenas o walking skeleton. As migrations, autenticação e o módulo de features serão implementados nas próximas fatias.
