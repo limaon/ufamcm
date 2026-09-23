@@ -1,5 +1,13 @@
 import express from 'express';
+
 import { db } from './lib/db.js';
+
+import {
+  createCampusFeature,
+  listCampusFeatures,
+} from './models/campusFeaturesModel.js';
+
+import { createCampusFeatureSchema } from './schemas/campusFeatureSchema.js';
 
 export const app = express();
 
@@ -22,4 +30,29 @@ app.get('/db-health', async (_request, response) => {
   response.json({
     database: result.rows[0].connected === 1,
   });
+});
+
+app.get('/features', async (_request, response) => {
+  const features = await listCampusFeatures();
+
+  response.json({
+    features,
+  });
+});
+
+app.post('/features', async (request, response) => {
+  const parsed = createCampusFeatureSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    response.status(400).json({
+      error: 'Dados inválidos',
+      details: parsed.error.issues,
+    });
+
+    return;
+  }
+
+  const feature = await createCampusFeature(parsed.data);
+
+  response.status(201).json(feature);
 });
