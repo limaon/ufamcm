@@ -2,7 +2,7 @@
 
 O Campus Map UFAM adotará uma arquitetura web em camadas, com **TypeScript** como linguagem principal, **Next.js 16/React** no frontend, **OpenLayers** para mapas, **Node.js 20/Express 5** no backend e **PostgreSQL 16 com PostGIS 3.4** para persistência geoespacial. A API será REST, utilizando JSON e GeoJSON; o acesso ao banco será feito por **Knex.js**, com migrations versionadas, e a validação de entradas por **Zod**.
 
-O ambiente local será reproduzível com **Docker Compose**. A qualidade será garantida inicialmente por **ESLint, Prettier, Vitest, Supertest e Playwright**. A primeira fatia funcional será mapa público + autenticação + criação de feature pendente + aprovação administrativa. GeoServer/WMS, Mapillary, Mapbox, visualização 3D, Nginx e Jenkins ficam adiados até serem necessários por uma entrega concreta.
+O ambiente local será reproduzível com **Docker Compose**. A qualidade será garantida inicialmente por **ESLint, Prettier, Jest, Supertest e Playwright**. A primeira fatia funcional será mapa público + autenticação + criação de feature pendente + aprovação administrativa. GeoServer/WMS, Mapillary, Mapbox, visualização 3D, Nginx e Jenkins ficam adiados até serem necessários por uma entrega concreta.
 
 ## Decisão
 
