@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
+import Feature from 'ol/Feature.js';
 import Map from 'ol/Map.js';
 import View from 'ol/View.js';
 import Draw from 'ol/interaction/Draw.js';
@@ -31,6 +32,7 @@ export default function CampusMap() {
   const baseLayerRef = useRef<TileLayer<OSM> | null>(null);
   const featuresLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
   const drawSourceRef = useRef<VectorSource | null>(null);
+  const featuresSourceRef = useRef<VectorSource | null>(null);
   const drawInteractionRef = useRef<Draw | null>(null);
   const mapRef = useRef<Map | null>(null);
   const [selectedFeature, setSelectedFeature] =
@@ -39,6 +41,14 @@ export default function CampusMap() {
   const [featuresLayerVisible, setFeaturesLayerVisible] = useState(true);
   const [geometryType, setGeometryType] = useState<GeometryType>('Point');
   const [isDrawing, setIsDrawing] = useState(false);
+  const [drawnFeatureCount, setDrawnFeatureCount] = useState(0);
+  const [pendingFeature, setPendingFeature] = useState<Feature | null>(null);
+  const [featureName, setFeatureName] = useState('');
+  const [featureCategory, setFeatureCategory] = useState('building');
+  const [featureDescription, setFeatureDescription] = useState('');
+  const [saveStatus, setSaveStatus] = useState<
+    'idle' | 'saving' | 'success' | 'error'
+  >('idle');
 
   useEffect(() => {
     if (!mapElement.current) {
@@ -116,6 +126,7 @@ export default function CampusMap() {
 
     baseLayerRef.current = baseLayer;
     featuresLayerRef.current = featureLayer;
+    featuresSourceRef.current = featureSource;
     drawSourceRef.current = drawSource;
 
     const map = new Map({
@@ -189,6 +200,7 @@ export default function CampusMap() {
         map.removeInteraction(drawInteractionRef.current);
       }
       drawInteractionRef.current = null;
+      featuresSourceRef.current = null;
       drawSourceRef.current = null;
       mapRef.current = null;
       baseLayerRef.current = null;
@@ -196,6 +208,59 @@ export default function CampusMap() {
       map.setTarget(undefined);
     };
   }, []);
+
+  async function saveFeature(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const geometry = pendingFeature?.getGeometry();
+
+    if (!pendingFeature || !geometry) {
+      return;
+    }
+
+    setSaveStatus('saving');
+
+    try {
+      const geojsonGeometry = new GeoJSON().writeGeometryObject(geometry, {
+        featureProjection: 'EPSG:3857',
+        dataProjection: 'EPSG:4326',
+      });
+
+      const response = await fetch('http://localhost:3001/features', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: featureName,
+          category: featureCategory,
+          description: featureDescription,
+          geometry: geojsonGeometry,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Não foi possível salvar a feature');
+      }
+
+      pendingFeature.setProperties({
+        name: featureName,
+        category: featureCategory,
+        description: featureDescription,
+        status: 'pending',
+      });
+
+      featuresSourceRef.current?.addFeature(pendingFeature);
+      drawSourceRef.current?.removeFeature(pendingFeature);
+      setPendingFeature(null);
+      setFeatureName('');
+      setFeatureDescription('');
+      setSaveStatus('success');
+    } catch (error) {
+      console.error('Erro ao salvar feature:', error);
+      setSaveStatus('error');
+    }
+  }
 
   function startDrawing() {
     if (!mapRef.current || !drawSourceRef.current) {
@@ -206,12 +271,20 @@ export default function CampusMap() {
       mapRef.current.removeInteraction(drawInteractionRef.current);
     }
 
+    drawSourceRef.current.clear();
+    setPendingFeature(null);
+    setFeatureName('');
+    setFeatureDescription('');
+    setSaveStatus('idle');
+
     const drawInteraction = new Draw({
       source: drawSourceRef.current,
       type: geometryType,
     });
 
-    drawInteraction.on('drawend', () => {
+    drawInteraction.on('drawend', (event) => {
+      setPendingFeature(event.feature);
+      setDrawnFeatureCount((count) => count + 1);
       setIsDrawing(false);
       drawInteractionRef.current = null;
       mapRef.current?.removeInteraction(drawInteraction);
@@ -229,6 +302,7 @@ export default function CampusMap() {
 
     drawInteractionRef.current = null;
     setIsDrawing(false);
+    setPendingFeature(null);
   }
 
   return (
@@ -236,6 +310,7 @@ export default function CampusMap() {
       ref={mapElement}
       data-testid="campus-map"
       data-features-loaded="false"
+      data-drawn-feature-count={drawnFeatureCount}
       style={{
         width: '100%',
         height: '600px',
@@ -262,6 +337,67 @@ export default function CampusMap() {
         onStartDrawing={startDrawing}
         onCancelDrawing={cancelDrawing}
       />
+
+      {saveStatus === 'success' && (
+        <p data-testid="feature-save-success">Feature salva com sucesso.</p>
+      )}
+
+      {saveStatus === 'error' && (
+        <p data-testid="feature-save-error">
+          Não foi possível salvar a feature.
+        </p>
+      )}
+
+      {pendingFeature && (
+        <form
+          data-testid="feature-form"
+          onSubmit={saveFeature}
+          style={{
+            position: 'absolute',
+            right: '16px',
+            bottom: '16px',
+            zIndex: 1,
+            display: 'grid',
+            gap: '8px',
+            minWidth: '240px',
+            padding: '16px',
+            background: '#ffffff',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgb(0 0 0 / 20%)',
+          }}
+        >
+          <strong>Dados da feature</strong>
+
+          <label htmlFor="feature-name">Nome</label>
+          <input
+            id="feature-name"
+            value={featureName}
+            onChange={(event) => setFeatureName(event.target.value)}
+          />
+
+          <label htmlFor="feature-category">Categoria</label>
+          <input
+            id="feature-category"
+            value={featureCategory}
+            onChange={(event) => setFeatureCategory(event.target.value)}
+          />
+
+          <label htmlFor="feature-description">Descrição</label>
+          <textarea
+            id="feature-description"
+            value={featureDescription}
+            onChange={(event) => setFeatureDescription(event.target.value)}
+          />
+
+          <button
+            type="submit"
+            disabled={!featureName.trim() || saveStatus === 'saving'}
+          >
+            {saveStatus === 'saving' ? 'Salvando...' : 'Salvar feature'}
+          </button>
+        </form>
+      )}
 
       {selectedFeature && (
         <aside
