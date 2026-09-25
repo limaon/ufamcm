@@ -15,6 +15,7 @@ import Fill from 'ol/style/Fill.js';
 import Stroke from 'ol/style/Stroke.js';
 import 'ol/ol.css';
 import LayerControls from './LayerControls';
+import { getCategoryColor } from './featureStyles';
 
 type SelectedFeature = {
   name: string;
@@ -41,18 +42,47 @@ export default function CampusMap() {
 
     const featureLayer = new VectorLayer({
       source: featureSource,
-      style: new Style({
-        image: new CircleStyle({
-          radius: 8,
-          fill: new Fill({
-            color: '#2563eb',
+      style: (feature) => {
+        const color = getCategoryColor(feature.get('category'));
+        const geometryType = feature.getGeometry()?.getType();
+
+        if (
+          geometryType === 'LineString' ||
+          geometryType === 'MultiLineString'
+        ) {
+          return new Style({
+            stroke: new Stroke({
+              color,
+              width: 4,
+            }),
+          });
+        }
+
+        if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
+          return new Style({
+            fill: new Fill({
+              color: `${color}40`,
+            }),
+            stroke: new Stroke({
+              color,
+              width: 2,
+            }),
+          });
+        }
+
+        return new Style({
+          image: new CircleStyle({
+            radius: 8,
+            fill: new Fill({
+              color,
+            }),
+            stroke: new Stroke({
+              color: '#ffffff',
+              width: 2,
+            }),
           }),
-          stroke: new Stroke({
-            color: '#ffffff',
-            width: 2,
-          }),
-        }),
-      }),
+        });
+      },
     });
 
     const baseLayer = new TileLayer({
