@@ -1,5 +1,5 @@
 import express from 'express';
-
+import cors from 'cors';
 import { db } from './lib/db.js';
 
 import {
@@ -10,6 +10,14 @@ import {
 import { createCampusFeatureSchema } from './schemas/campusFeatureSchema.js';
 
 export const app = express();
+
+app.use(
+  cors({
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type'],
+  }),
+);
 
 app.use(express.json());
 
