@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Map from 'ol/Map.js';
 import View from 'ol/View.js';
 import TileLayer from 'ol/layer/Tile.js';
@@ -15,8 +15,17 @@ import Fill from 'ol/style/Fill.js';
 import Stroke from 'ol/style/Stroke.js';
 import 'ol/ol.css';
 
+type SelectedFeature = {
+  name: string;
+  category: string;
+  description?: string;
+  status?: string;
+};
+
 export default function CampusMap() {
   const mapElement = useRef<HTMLDivElement>(null);
+  const [selectedFeature, setSelectedFeature] =
+    useState<SelectedFeature | null>(null);
 
   useEffect(() => {
     if (!mapElement.current) {
@@ -74,6 +83,7 @@ export default function CampusMap() {
         });
 
         featureSource.addFeatures(features);
+        mapElement.current?.setAttribute('data-features-loaded', 'true');
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
           return;
@@ -85,6 +95,29 @@ export default function CampusMap() {
 
     void loadFeatures();
 
+    map.on('singleclick', (event) => {
+      const feature = map.forEachFeatureAtPixel(
+        event.pixel,
+        (candidate) => candidate,
+      );
+
+      if (!feature) {
+        setSelectedFeature(null);
+        return;
+      }
+
+      const properties = feature.getProperties();
+
+      setSelectedFeature({
+        name: String(properties.name ?? 'Sem nome'),
+        category: String(properties.category ?? 'Sem categoria'),
+        description: properties.description
+          ? String(properties.description)
+          : undefined,
+        status: properties.status ? String(properties.status) : undefined,
+      });
+    });
+
     return () => {
       controller.abort();
       map.setTarget(undefined);
@@ -94,10 +127,48 @@ export default function CampusMap() {
   return (
     <div
       ref={mapElement}
+      data-testid="campus-map"
+      data-features-loaded="false"
       style={{
         width: '100%',
         height: '600px',
+        position: 'relative',
       }}
-    />
+    >
+      {selectedFeature && (
+        <aside
+          data-testid="feature-popup"
+          role="dialog"
+          style={{
+            position: 'absolute',
+            top: '16px',
+            left: '16px',
+            zIndex: 1,
+            minWidth: '220px',
+            padding: '16px',
+            background: '#ffffff',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgb(0 0 0 / 20%)',
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Fechar detalhes da feature"
+            onClick={() => setSelectedFeature(null)}
+            style={{ float: 'right' }}
+          >
+            Fechar
+          </button>
+
+          <h2>{selectedFeature.name}</h2>
+          <p>Categoria: {selectedFeature.category}</p>
+
+          {selectedFeature.description && <p>{selectedFeature.description}</p>}
+
+          {selectedFeature.status && <p>Status: {selectedFeature.status}</p>}
+        </aside>
+      )}
+    </div>
   );
 }
