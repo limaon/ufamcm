@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Map from 'ol/Map.js';
 import View from 'ol/View.js';
+import Draw from 'ol/interaction/Draw.js';
 import TileLayer from 'ol/layer/Tile.js';
 import VectorLayer from 'ol/layer/Vector.js';
 import OSM from 'ol/source/OSM.js';
@@ -16,6 +17,7 @@ import Stroke from 'ol/style/Stroke.js';
 import 'ol/ol.css';
 import LayerControls from './LayerControls';
 import { getCategoryColor } from './featureStyles';
+import DrawControls, { type GeometryType } from './DrawControls';
 
 type SelectedFeature = {
   name: string;
@@ -28,10 +30,15 @@ export default function CampusMap() {
   const mapElement = useRef<HTMLDivElement>(null);
   const baseLayerRef = useRef<TileLayer<OSM> | null>(null);
   const featuresLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
+  const drawSourceRef = useRef<VectorSource | null>(null);
+  const drawInteractionRef = useRef<Draw | null>(null);
+  const mapRef = useRef<Map | null>(null);
   const [selectedFeature, setSelectedFeature] =
     useState<SelectedFeature | null>(null);
   const [baseLayerVisible, setBaseLayerVisible] = useState(true);
   const [featuresLayerVisible, setFeaturesLayerVisible] = useState(true);
+  const [geometryType, setGeometryType] = useState<GeometryType>('Point');
+  const [isDrawing, setIsDrawing] = useState(false);
 
   useEffect(() => {
     if (!mapElement.current) {
@@ -89,17 +96,38 @@ export default function CampusMap() {
       source: new OSM(),
     });
 
+    const drawSource = new VectorSource();
+    const drawLayer = new VectorLayer({
+      source: drawSource,
+      style: new Style({
+        image: new CircleStyle({
+          radius: 7,
+          fill: new Fill({ color: '#dc2626' }),
+          stroke: new Stroke({ color: '#ffffff', width: 2 }),
+        }),
+        stroke: new Stroke({
+          color: '#dc2626',
+          width: 3,
+          lineDash: [8, 6],
+        }),
+        fill: new Fill({ color: 'rgba(220, 38, 38, 0.2)' }),
+      }),
+    });
+
     baseLayerRef.current = baseLayer;
     featuresLayerRef.current = featureLayer;
+    drawSourceRef.current = drawSource;
 
     const map = new Map({
       target: mapElement.current,
-      layers: [baseLayer, featureLayer],
+      layers: [baseLayer, featureLayer, drawLayer],
       view: new View({
         center: fromLonLat([-59.982, -3.095]),
         zoom: 15,
       }),
     });
+
+    mapRef.current = map;
 
     const controller = new AbortController();
 
@@ -157,11 +185,51 @@ export default function CampusMap() {
 
     return () => {
       controller.abort();
+      if (drawInteractionRef.current) {
+        map.removeInteraction(drawInteractionRef.current);
+      }
+      drawInteractionRef.current = null;
+      drawSourceRef.current = null;
+      mapRef.current = null;
       baseLayerRef.current = null;
       featuresLayerRef.current = null;
       map.setTarget(undefined);
     };
   }, []);
+
+  function startDrawing() {
+    if (!mapRef.current || !drawSourceRef.current) {
+      return;
+    }
+
+    if (drawInteractionRef.current) {
+      mapRef.current.removeInteraction(drawInteractionRef.current);
+    }
+
+    const drawInteraction = new Draw({
+      source: drawSourceRef.current,
+      type: geometryType,
+    });
+
+    drawInteraction.on('drawend', () => {
+      setIsDrawing(false);
+      drawInteractionRef.current = null;
+      mapRef.current?.removeInteraction(drawInteraction);
+    });
+
+    mapRef.current.addInteraction(drawInteraction);
+    drawInteractionRef.current = drawInteraction;
+    setIsDrawing(true);
+  }
+
+  function cancelDrawing() {
+    if (drawInteractionRef.current && mapRef.current) {
+      mapRef.current.removeInteraction(drawInteractionRef.current);
+    }
+
+    drawInteractionRef.current = null;
+    setIsDrawing(false);
+  }
 
   return (
     <div
@@ -185,6 +253,14 @@ export default function CampusMap() {
           setFeaturesLayerVisible(visible);
           featuresLayerRef.current?.setVisible(visible);
         }}
+      />
+
+      <DrawControls
+        geometryType={geometryType}
+        isDrawing={isDrawing}
+        onGeometryTypeChange={setGeometryType}
+        onStartDrawing={startDrawing}
+        onCancelDrawing={cancelDrawing}
       />
 
       {selectedFeature && (

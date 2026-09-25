@@ -74,3 +74,25 @@ test('permite alternar a camada base', async ({ page }) => {
 
   await expect(baseLayer).not.toBeChecked();
 });
+
+test('exibe os controles de desenho', async ({ page }) => {
+  await page.goto('/');
+
+  await expect(
+    page.getByRole('combobox', {
+      name: 'Tipo de geometria',
+    }),
+  ).toBeVisible();
+
+  await expect(
+    page.getByRole('button', {
+      name: 'Iniciar desenho',
+    }),
+  ).toBeVisible();
+
+  await expect(
+    page.getByRole('button', {
+      name: 'Cancelar desenho',
+    }),
+  ).toBeVisible();
+});
