@@ -14,6 +14,7 @@ import CircleStyle from 'ol/style/Circle.js';
 import Fill from 'ol/style/Fill.js';
 import Stroke from 'ol/style/Stroke.js';
 import 'ol/ol.css';
+import LayerControls from './LayerControls';
 
 type SelectedFeature = {
   name: string;
@@ -24,8 +25,12 @@ type SelectedFeature = {
 
 export default function CampusMap() {
   const mapElement = useRef<HTMLDivElement>(null);
+  const baseLayerRef = useRef<TileLayer<OSM> | null>(null);
+  const featuresLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
   const [selectedFeature, setSelectedFeature] =
     useState<SelectedFeature | null>(null);
+  const [baseLayerVisible, setBaseLayerVisible] = useState(true);
+  const [featuresLayerVisible, setFeaturesLayerVisible] = useState(true);
 
   useEffect(() => {
     if (!mapElement.current) {
@@ -50,14 +55,16 @@ export default function CampusMap() {
       }),
     });
 
+    const baseLayer = new TileLayer({
+      source: new OSM(),
+    });
+
+    baseLayerRef.current = baseLayer;
+    featuresLayerRef.current = featureLayer;
+
     const map = new Map({
       target: mapElement.current,
-      layers: [
-        new TileLayer({
-          source: new OSM(),
-        }),
-        featureLayer,
-      ],
+      layers: [baseLayer, featureLayer],
       view: new View({
         center: fromLonLat([-59.982, -3.095]),
         zoom: 15,
@@ -120,6 +127,8 @@ export default function CampusMap() {
 
     return () => {
       controller.abort();
+      baseLayerRef.current = null;
+      featuresLayerRef.current = null;
       map.setTarget(undefined);
     };
   }, []);
@@ -135,6 +144,19 @@ export default function CampusMap() {
         position: 'relative',
       }}
     >
+      <LayerControls
+        baseLayerVisible={baseLayerVisible}
+        featuresLayerVisible={featuresLayerVisible}
+        onBaseLayerVisibilityChange={(visible) => {
+          setBaseLayerVisible(visible);
+          baseLayerRef.current?.setVisible(visible);
+        }}
+        onFeaturesLayerVisibilityChange={(visible) => {
+          setFeaturesLayerVisible(visible);
+          featuresLayerRef.current?.setVisible(visible);
+        }}
+      />
+
       {selectedFeature && (
         <aside
           data-testid="feature-popup"
