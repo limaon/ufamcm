@@ -33,9 +33,35 @@ app.get('/db-health', async (_request, response) => {
 });
 
 app.get('/features', async (_request, response) => {
-  const features = await listCampusFeatures();
+  const rows = await listCampusFeatures();
+
+  const features = rows.map(
+    ({
+      id,
+      geometry,
+      name,
+      category,
+      description,
+      status,
+      created_at,
+      updated_at,
+    }) => ({
+      type: 'Feature' as const,
+      id,
+      geometry,
+      properties: {
+        name,
+        category,
+        description,
+        status,
+        created_at,
+        updated_at,
+      },
+    }),
+  );
 
   response.json({
+    type: 'FeatureCollection',
     features,
   });
 });
