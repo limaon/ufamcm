@@ -26,7 +26,7 @@ test('mantém a pendência e mostra erro quando a aprovação falha', async ({
       await route.fulfill({ status: 500, json: { error: 'Falha' } });
     }
   });
-  await page.goto('/admin');
+  await page.goto('/admin/login');
   await page.getByLabel('Email').fill('admin@example.com');
   await page.getByLabel('Senha', { exact: true }).fill('senha-de-teste');
   await page.getByRole('button', { name: 'Entrar' }).click();
@@ -46,7 +46,7 @@ test('editor não acessa o painel administrativo', async ({ page }) => {
       json: { token: 'editor-token', user: { role: 'editor' } },
     }),
   );
-  await page.goto('/admin');
+  await page.goto('/admin/login');
   await page.getByLabel('Email').fill('editor@example.com');
   await page.getByLabel('Senha', { exact: true }).fill('senha-de-teste');
   await page.getByRole('button', { name: 'Entrar' }).click();
@@ -97,7 +97,7 @@ test('administrador entra, aprova e rejeita pendências', async ({ page }) => {
       });
     }
   });
-  await page.goto('/admin');
+  await page.goto('/admin/login');
   await page.getByLabel('Email').fill('admin@example.com');
   await page.getByLabel('Senha', { exact: true }).fill('senha-de-teste');
   await page.getByRole('button', { name: 'Entrar' }).click();
@@ -129,7 +129,7 @@ test('persiste a sessão ao recarregar e permite sair', async ({ page }) => {
     await route.fulfill({ json: { features: [] } });
   });
 
-  await page.goto('/admin');
+  await page.goto('/admin/login');
   await page.getByLabel('Email').fill('admin@example.com');
   await page.getByLabel('Senha', { exact: true }).fill('senha-de-teste');
   await page.getByRole('button', { name: 'Entrar' }).click();
@@ -143,4 +143,12 @@ test('persiste a sessão ao recarregar e permite sair', async ({ page }) => {
   await page.getByRole('button', { name: 'Sair' }).click();
   await expect(page.getByRole('button', { name: 'Entrar' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Sair' })).toHaveCount(0);
+});
+
+test('redireciona acesso direto sem sessão para o login', async ({ page }) => {
+  await page.goto('/admin');
+  await expect(page).toHaveURL(/\/admin\/login$/);
+  await expect(
+    page.getByRole('heading', { name: 'Login administrativo' }),
+  ).toBeVisible();
 });

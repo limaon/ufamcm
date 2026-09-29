@@ -1,7 +1,9 @@
 'use client';
 
-import { type FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { apiUrl, sessionStorageKey } from './session';
 
 type PendingFeature = {
   id: number;
@@ -10,10 +12,8 @@ type PendingFeature = {
   description: string | null;
 };
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
-const sessionStorageKey = 'campus-map.admin-token';
-
 export default function AdminPage() {
+  const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [features, setFeatures] = useState<PendingFeature[]>([]);
   const [reasons, setReasons] = useState<Record<number, string>>({});
@@ -30,6 +30,7 @@ export default function AdminPage() {
       setToken(null);
       setFeatures([]);
       setLoaded(false);
+      router.replace('/admin/login');
       throw new Error('Sessão inválida ou expirada. Entre novamente.');
     }
     if (response.status === 403)
@@ -52,6 +53,7 @@ export default function AdminPage() {
 
     if (!savedToken) {
       setRestoringSession(false);
+      router.replace('/admin/login');
       return;
     }
 
@@ -63,39 +65,7 @@ export default function AdminPage() {
       .finally(() => {
         setRestoringSession(false);
       });
-  }, []);
-
-  async function login(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    setBusy(true);
-    setError('');
-    try {
-      const response = await fetch(`${apiUrl}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: data.get('email'),
-          password: data.get('password'),
-        }),
-      });
-      if (response.status === 401) throw new Error('Credenciais inválidas.');
-      await checkResponse(response);
-      const authentication = await response.json();
-      if (authentication.user.role !== 'admin') {
-        throw new Error('Acesso restrito a administradores.');
-      }
-      form.reset();
-      setToken(authentication.token);
-      window.localStorage.setItem(sessionStorageKey, authentication.token);
-      await loadPending(authentication.token);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Erro de conexão.');
-    } finally {
-      setBusy(false);
-    }
-  }
+  }, [router]);
 
   function logout() {
     window.localStorage.removeItem(sessionStorageKey);
@@ -105,6 +75,7 @@ export default function AdminPage() {
     setReasons({});
     setError('');
     setMessage('');
+    router.replace('/admin/login');
   }
 
   async function refresh() {
@@ -160,28 +131,7 @@ export default function AdminPage() {
       {restoringSession ? (
         <p>Restaurando sessão...</p>
       ) : !token ? (
-        <form onSubmit={login}>
-          <fieldset disabled={busy} style={{ display: 'grid', gap: 12 }}>
-            <legend>Login de administrador</legend>
-            <label htmlFor="admin-email">Email</label>
-            <input
-              id="admin-email"
-              name="email"
-              type="email"
-              autoComplete="username"
-              required
-            />
-            <label htmlFor="admin-password">Senha</label>
-            <input
-              id="admin-password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-            />
-            <button type="submit">Entrar</button>
-          </fieldset>
-        </form>
+        <p>Redirecionando para o login...</p>
       ) : (
         <section aria-label="Features pendentes">
           <h2>Features pendentes</h2>

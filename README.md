@@ -46,4 +46,20 @@ Ele usa a mesma `DATABASE_URL` da API; na ausência dela, usa o banco local conf
 
 Inicie a aplicação com `npm run dev` e acesse http://localhost:3000/admin.
 Entre com as credenciais criadas para listar, aprovar ou rejeitar pendências.
-A sessão do painel fica em memória: recarregar a página exige novo login.
+A sessão do painel é persistida no navegador. Use **Sair** para encerrá-la.
+
+## Testes E2E administrativos com API real
+
+Com PostgreSQL/PostGIS ativo, migrations aplicadas e `npm run dev` rodando,
+execute em outro terminal, na raiz:
+
+```bash
+npm run test:e2e --workspace @campus-map/web -- admin-real.spec.ts --workers=1
+```
+
+Os testes usam o navegador, a API e o banco reais, sem interceptar requisições.
+Cobrem login, recarga da sessão, aprovação/rejeição, logout, senha incorreta e
+restrição de acesso para editor. Usuários e features temporários têm identificadores
+únicos e são removidos ao final de cada teste, inclusive em caso de falha.
+O processo dos testes deve usar a mesma `DATABASE_URL` da API (ou o mesmo padrão
+local). A URL da API segue `NEXT_PUBLIC_API_URL`, com padrão `http://localhost:3001`.
