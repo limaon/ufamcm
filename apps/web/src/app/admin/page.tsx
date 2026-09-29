@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { apiUrl, sessionStorageKey } from './session';
+import { apiUrl, getToken, clearToken } from '../session';
 
 type PendingFeature = {
   id: number;
@@ -26,15 +26,18 @@ export default function AdminPage() {
   async function checkResponse(response: Response) {
     if (response.ok) return;
     if (response.status === 401) {
-      window.localStorage.removeItem(sessionStorageKey);
+      clearToken();
       setToken(null);
       setFeatures([]);
       setLoaded(false);
       router.replace('/admin/login');
       throw new Error('Sessão inválida ou expirada. Entre novamente.');
     }
-    if (response.status === 403)
+    if (response.status === 403) {
+      setToken(null);
+      setFeatures([]);
       throw new Error('Acesso restrito a administradores.');
+    }
     throw new Error('Não foi possível concluir a operação. Tente novamente.');
   }
 
@@ -49,7 +52,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    const savedToken = window.localStorage.getItem(sessionStorageKey);
+    const savedToken = getToken();
 
     if (!savedToken) {
       setRestoringSession(false);
@@ -68,7 +71,7 @@ export default function AdminPage() {
   }, [router]);
 
   function logout() {
-    window.localStorage.removeItem(sessionStorageKey);
+    clearToken();
     setToken(null);
     setFeatures([]);
     setLoaded(false);
@@ -133,7 +136,9 @@ export default function AdminPage() {
       {restoringSession ? (
         <p>Restaurando sessão...</p>
       ) : !token ? (
-        <p>Redirecionando para o login...</p>
+        <p>
+          <Link href="/admin/login">Entrar como administrador</Link>
+        </p>
       ) : (
         <section aria-label="Features pendentes">
           <h2>Features pendentes</h2>

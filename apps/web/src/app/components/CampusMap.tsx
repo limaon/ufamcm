@@ -20,6 +20,7 @@ import LayerControls from './LayerControls';
 import { getCategoryColor } from './featureStyles';
 import DrawControls, { type GeometryType } from './DrawControls';
 import SearchControls, { type SearchResult } from './SearchControls';
+import { apiUrl, getToken, clearToken, useSessionToken } from '../session';
 
 type SelectedFeature = {
   name: string;
@@ -29,6 +30,8 @@ type SelectedFeature = {
 };
 
 export default function CampusMap() {
+  const sessionToken = useSessionToken();
+  const [saveError, setSaveError] = useState('');
   const mapElement = useRef<HTMLDivElement>(null);
   const baseLayerRef = useRef<TileLayer<OSM> | null>(null);
   const featuresLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
@@ -147,7 +150,7 @@ export default function CampusMap() {
 
     async function loadFeatures() {
       try {
-        const response = await fetch('http://localhost:3001/features', {
+        const response = await fetch(`${apiUrl}/features`, {
           signal: controller.signal,
         });
 
@@ -255,6 +258,13 @@ export default function CampusMap() {
       return;
     }
 
+    const token = getToken();
+    if (!token) {
+      setSaveError('Entre para salvar sua contribuição.');
+      setSaveStatus('error');
+      return;
+    }
+    setSaveError('');
     setSaveStatus('saving');
 
     try {
@@ -263,10 +273,11 @@ export default function CampusMap() {
         dataProjection: 'EPSG:4326',
       });
 
-      const response = await fetch('http://localhost:3001/features', {
+      const response = await fetch(`${apiUrl}/features`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: featureName,
@@ -276,6 +287,12 @@ export default function CampusMap() {
         }),
       });
 
+      if (response.status === 401) {
+        clearToken();
+        throw new Error(
+          'Sessão expirada ou inválida. Entre novamente para salvar.',
+        );
+      }
       if (!response.ok) {
         throw new Error('Não foi possível salvar a feature');
       }
@@ -294,7 +311,11 @@ export default function CampusMap() {
       setFeatureDescription('');
       setSaveStatus('success');
     } catch (error) {
-      console.error('Erro ao salvar feature:', error);
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível salvar a feature.',
+      );
       setSaveStatus('error');
     }
   }
@@ -387,9 +408,7 @@ export default function CampusMap() {
       )}
 
       {saveStatus === 'error' && (
-        <p data-testid="feature-save-error">
-          Não foi possível salvar a feature.
-        </p>
+        <p data-testid="feature-save-error">{saveError}</p>
       )}
 
       {pendingFeature && (
@@ -412,6 +431,12 @@ export default function CampusMap() {
           }}
         >
           <strong>Dados da feature</strong>
+          {!sessionToken && (
+            <p>
+              Entre no formulário acima do mapa para salvar. Seu desenho será
+              preservado.
+            </p>
+          )}
 
           <label htmlFor="feature-name">Nome</label>
           <input
@@ -436,7 +461,9 @@ export default function CampusMap() {
 
           <button
             type="submit"
-            disabled={!featureName.trim() || saveStatus === 'saving'}
+            disabled={
+              !sessionToken || !featureName.trim() || saveStatus === 'saving'
+            }
           >
             {saveStatus === 'saving' ? 'Salvando...' : 'Salvar feature'}
           </button>

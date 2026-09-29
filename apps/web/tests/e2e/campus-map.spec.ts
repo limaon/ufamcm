@@ -159,7 +159,7 @@ test('exibe o formulário após desenhar uma feature', async ({ page }) => {
   await expect(form.getByLabel('Descrição')).toBeVisible();
 });
 
-test('salva uma feature desenhada pela API', async ({ page }) => {
+test('exige sessão para salvar uma feature desenhada', async ({ page }) => {
   await page.goto('/');
 
   const map = page.getByTestId('campus-map');
@@ -187,12 +187,11 @@ test('salva uma feature desenhada pela API', async ({ page }) => {
   await form.getByLabel('Nome').fill('Feature criada pelo E2E');
   await form.getByLabel('Categoria').fill('building');
   await form.getByLabel('Descrição').fill('Criada pelo teste');
-  await form.getByRole('button', { name: 'Salvar feature' }).click();
-
-  await expect(page.getByTestId('feature-save-success')).toHaveText(
-    'Feature salva com sucesso.',
-  );
-  await expect(form).not.toBeVisible();
+  await expect(
+    form.getByRole('button', { name: 'Salvar feature' }),
+  ).toBeDisabled();
+  await expect(form).toContainText('Entre no formulário acima do mapa');
+  await expect(form.getByLabel('Nome')).toHaveValue('Feature criada pelo E2E');
 });
 
 test('busca features pelo nome', async ({ page }) => {

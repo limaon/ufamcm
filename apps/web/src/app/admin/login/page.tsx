@@ -3,7 +3,7 @@
 import { type FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { apiUrl, sessionStorageKey } from '../session';
+import { apiUrl, saveToken } from '../../session';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -40,7 +40,7 @@ export default function AdminLoginPage() {
         throw new Error('Acesso restrito a administradores.');
       }
 
-      window.localStorage.setItem(sessionStorageKey, authentication.token);
+      saveToken(authentication.token);
       router.replace('/admin');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Erro de conexão.');

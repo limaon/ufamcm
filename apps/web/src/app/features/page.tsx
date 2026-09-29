@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
-import { apiUrl } from '../admin/session';
+import { apiUrl, getToken, saveToken, clearToken } from '../session';
 
 type EditableFeature = {
   id: number;
@@ -13,8 +13,6 @@ type EditableFeature = {
   geometry: { type: string; coordinates: unknown };
 };
 
-const storageKey = 'campus-map.edit-token';
-
 export default function FeaturesPage() {
   const [token, setToken] = useState<string | null>(null);
   const [features, setFeatures] = useState<EditableFeature[]>([]);
@@ -24,7 +22,7 @@ export default function FeaturesPage() {
   const [message, setMessage] = useState('');
 
   function logout() {
-    localStorage.removeItem(storageKey);
+    clearToken();
     setToken(null);
     setFeatures([]);
     setSelected(null);
@@ -66,7 +64,7 @@ export default function FeaturesPage() {
     const controller = new AbortController();
     async function restore() {
       try {
-        const saved = localStorage.getItem(storageKey);
+        const saved = getToken();
         if (saved) await load(saved, controller.signal);
       } catch {
         if (!controller.signal.aborted)
@@ -97,7 +95,7 @@ export default function FeaturesPage() {
       if (response.status === 401) throw new Error('Credenciais inválidas.');
       await checkResponse(response);
       const authentication = await response.json();
-      localStorage.setItem(storageKey, authentication.token);
+      saveToken(authentication.token);
       form.reset();
       await load(authentication.token);
     } catch (cause) {

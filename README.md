@@ -48,6 +48,20 @@ Inicie a aplicação com `npm run dev` e acesse http://localhost:3000/admin.
 Entre com as credenciais criadas para listar, aprovar ou rejeitar pendências.
 A sessão do painel é persistida no navegador. Use **Sair** para encerrá-la.
 
+### Sessão compartilhada e contribuições no mapa
+
+Mapa, edição e curadoria usam o mesmo token de sessão. Entre no formulário acima
+do mapa com uma conta `editor` ou `admin`, desenhe e salve sua contribuição.
+É possível desenhar antes do login: o rascunho permanece enquanto você entra na
+mesma página. O salvamento exige autenticação, envia o Bearer token e registra
+a autoria no banco com status `pending`.
+
+Depois de entrar, navegue para **Editar features** ou, se for admin, para
+**Curadoria administrativa**, sem novo login. **Sair** remove a sessão compartilhada.
+Se a API recusar o token com `401`, o mapa pede novo login e preserva o rascunho.
+As antigas sessões separadas foram substituídas: após esta atualização, entre
+novamente uma vez.
+
 ## Testes E2E administrativos com API real
 
 Com PostgreSQL/PostGIS ativo, migrations aplicadas e `npm run dev` rodando,

@@ -45,6 +45,105 @@ test.afterAll(async () => {
   await db.destroy();
 });
 
+test('API real: token inválido no mapa preserva desenho e pede novo login', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.evaluate(() =>
+    localStorage.setItem('campus-map.session-token', 'invalid-token'),
+  );
+  await page.reload();
+  const map = page.getByTestId('campus-map');
+  await expect(map).toHaveAttribute('data-features-loaded', 'true');
+  await page
+    .getByRole('button', { name: 'Iniciar desenho', exact: true })
+    .click();
+  const box = await map.boundingBox();
+  if (!box) throw new Error('Mapa não está visível');
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  const form = page.getByTestId('feature-form');
+  await form.getByLabel('Nome').fill('Rascunho preservado');
+  await form.getByRole('button', { name: 'Salvar feature' }).click();
+  await expect(page.getByTestId('feature-save-error')).toContainText(
+    'Sessão expirada ou inválida',
+  );
+  await expect(
+    page.getByRole('button', { name: 'Entrar', exact: true }),
+  ).toBeVisible();
+  await expect(form.getByLabel('Nome')).toHaveValue('Rascunho preservado');
+  await expect(
+    form.getByRole('button', { name: 'Salvar feature' }),
+  ).toBeDisabled();
+});
+
+for (const role of ['editor', 'admin'] as const) {
+  test.describe(`sessão unificada ${role}`, () => {
+    test.use({ accountRole: role });
+    test('cria no mapa com autoria, reutiliza sessão e encerra acesso', async ({
+      page,
+      account,
+    }) => {
+      const name = `Mapa autenticado ${randomUUID()}`;
+      await page.goto('/');
+      const map = page.getByTestId('campus-map');
+      await expect(map).toHaveAttribute('data-features-loaded', 'true');
+      await page
+        .getByRole('button', { name: 'Iniciar desenho', exact: true })
+        .click();
+      const box = await map.boundingBox();
+      if (!box) throw new Error('Mapa não está visível');
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+      const form = page.getByTestId('feature-form');
+      await form.getByLabel('Nome').fill(name);
+      await expect(
+        form.getByRole('button', { name: 'Salvar feature' }),
+      ).toBeDisabled();
+      await page.getByLabel('Email', { exact: true }).fill(account.email);
+      await page.getByLabel('Senha', { exact: true }).fill(account.password);
+      await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+      await expect(form.getByLabel('Nome')).toHaveValue(name);
+      await form.getByRole('button', { name: 'Salvar feature' }).click();
+      await expect(page.getByTestId('feature-save-success')).toHaveText(
+        'Feature salva com sucesso.',
+      );
+      const row = await db('campus_features')
+        .where({ name, created_by: account.id })
+        .first();
+      expect(row).toMatchObject({ status: 'pending', created_by: account.id });
+      await page
+        .getByRole('link', { name: 'Editar features', exact: true })
+        .click();
+      await expect(
+        page.getByRole('article', { name, exact: true }),
+      ).toBeVisible();
+      await page.goto('/admin');
+      if (role === 'admin') {
+        await expect(
+          page.getByRole('article', { name, exact: true }),
+        ).toBeVisible();
+      } else {
+        await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+          'Acesso restrito a administradores.',
+        );
+        await expect(
+          page.getByRole('region', { name: 'Features pendentes' }),
+        ).toHaveCount(0);
+      }
+      await page.goto('/');
+      await expect(
+        page.getByRole('button', { name: 'Sair', exact: true }),
+      ).toBeVisible();
+      await page.getByRole('button', { name: 'Sair', exact: true }).click();
+      await page.goto('/features');
+      await expect(
+        page.getByRole('button', { name: 'Entrar', exact: true }),
+      ).toBeVisible();
+      await page.goto('/admin');
+      await expect(page).toHaveURL(/\/admin\/login$/);
+    });
+  });
+}
+
 for (const role of ['editor', 'admin'] as const) {
   test.describe(`edição por ${role}`, () => {
     test.use({ accountRole: role });
