@@ -62,6 +62,20 @@ Se a API recusar o token com `401`, o mapa pede novo login e preserva o rascunho
 As antigas sessões separadas foram substituídas: após esta atualização, entre
 novamente uma vez.
 
+### Publicação no mapa público
+
+`GET /features` retorna somente registros `approved`, no formato GeoJSON
+`FeatureCollection`. Pendentes e rejeitados não aparecem na camada pública,
+na busca ou nos popups, mesmo quando o visitante está autenticado.
+Após salvar um desenho, o rascunho sai do mapa e a interface informa que aguarda
+aprovação. A contribuição continua disponível em **Editar features** e na fila
+de curadoria enquanto estiver pendente.
+
+Aprovar publica a feature; editar uma feature aprovada a devolve para `pending`
+e a retira das próximas consultas públicas. Rejeitar mantém a feature fora do
+mapa público. Recarregue o mapa para refletir decisões feitas em outra página.
+Nenhum registro histórico é aprovado automaticamente.
+
 ## Testes E2E administrativos com API real
 
 Com PostgreSQL/PostGIS ativo, migrations aplicadas e `npm run dev` rodando,

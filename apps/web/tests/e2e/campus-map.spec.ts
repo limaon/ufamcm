@@ -1,5 +1,29 @@
 import { expect, test } from '@playwright/test';
 
+// Os testes de interação usam uma publicação determinística; o fluxo real
+// de publicação e curadoria é exercitado em admin-real.spec.ts.
+test.beforeEach(async ({ page }) => {
+  await page.route('http://localhost:3001/features', (route) =>
+    route.fulfill({
+      json: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            id: 1,
+            geometry: { type: 'Point', coordinates: [-59.982, -3.095] },
+            properties: {
+              name: 'Biblioteca Central',
+              category: 'building',
+              status: 'approved',
+            },
+          },
+        ],
+      },
+    }),
+  );
+});
+
 test('exibe o popup ao clicar em uma feature', async ({ page }) => {
   await page.goto('/');
 

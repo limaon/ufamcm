@@ -297,14 +297,6 @@ export default function CampusMap() {
         throw new Error('Não foi possível salvar a feature');
       }
 
-      pendingFeature.setProperties({
-        name: featureName,
-        category: featureCategory,
-        description: featureDescription,
-        status: 'pending',
-      });
-
-      featuresSourceRef.current?.addFeature(pendingFeature);
       drawSourceRef.current?.removeFeature(pendingFeature);
       setPendingFeature(null);
       setFeatureName('');
@@ -404,7 +396,10 @@ export default function CampusMap() {
       />
 
       {saveStatus === 'success' && (
-        <p data-testid="feature-save-success">Feature salva com sucesso.</p>
+        <p data-testid="feature-save-success">
+          Feature salva com sucesso. Aguardando aprovação para aparecer no mapa
+          público.
+        </p>
       )}
 
       {saveStatus === 'error' && (

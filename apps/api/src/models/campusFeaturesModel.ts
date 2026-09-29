@@ -47,7 +47,9 @@ export async function updateCampusFeature(
   });
 }
 
-export async function listCampusFeatures(createdBy?: number) {
+export async function listCampusFeatures(
+  filters: { createdBy?: number; status?: 'approved' } = {},
+) {
   const query = db('campus_features')
     .select(
       'id',
@@ -60,7 +62,9 @@ export async function listCampusFeatures(createdBy?: number) {
     )
     .select(db.raw('ST_AsGeoJSON(geometry)::json AS geometry'))
     .orderBy('id');
-  if (createdBy !== undefined) query.where({ created_by: createdBy });
+  if (filters.createdBy !== undefined)
+    query.where({ created_by: filters.createdBy });
+  if (filters.status !== undefined) query.where({ status: filters.status });
   return query;
 }
 

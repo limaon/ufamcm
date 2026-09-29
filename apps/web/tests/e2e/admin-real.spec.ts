@@ -45,6 +45,90 @@ test.afterAll(async () => {
   await db.destroy();
 });
 
+test('API real: publicação, edição e rejeição controlam a visibilidade pública', async ({
+  page,
+  request,
+  account,
+}) => {
+  const name = `Publicação E2E ${randomUUID()}`;
+  const login = await request.post(`${apiUrl}/auth/login`, {
+    data: { email: account.email, password: account.password },
+  });
+  expect(login.status()).toBe(200);
+  const { token } = await login.json();
+  const headers = { Authorization: `Bearer ${token}` };
+  const created = await request.post(`${apiUrl}/features`, {
+    headers,
+    data: {
+      name,
+      category: 'building',
+      geometry: { type: 'Point', coordinates: [-59.982, -3.095] },
+    },
+  });
+  expect(created.status()).toBe(201);
+  const { id } = await created.json();
+
+  async function checkPublic(visible: boolean) {
+    const response = await request.get(`${apiUrl}/features`);
+    expect(response.status()).toBe(200);
+    const { features } = await response.json();
+    expect(features.some((feature: { id: number }) => feature.id === id)).toBe(
+      visible,
+    );
+    await page.goto('/');
+    await expect(page.getByTestId('campus-map')).toHaveAttribute(
+      'data-features-loaded',
+      'true',
+    );
+    await page.getByRole('searchbox', { name: 'Buscar features' }).fill(name);
+    const result = page
+      .getByTestId('search-results')
+      .getByRole('button')
+      .filter({ hasText: name });
+    await expect(result).toHaveCount(visible ? 1 : 0);
+  }
+
+  await checkPublic(false);
+  const pending = await request.get(`${apiUrl}/admin/features/pending`, {
+    headers,
+  });
+  expect((await pending.json()).features).toEqual(
+    expect.arrayContaining([expect.objectContaining({ id })]),
+  );
+  expect(
+    (
+      await request.post(`${apiUrl}/admin/features/${id}/approve`, { headers })
+    ).status(),
+  ).toBe(200);
+  await checkPublic(true);
+  expect(
+    (
+      await request.patch(`${apiUrl}/features/${id}`, {
+        headers,
+        data: { description: 'Revisar alteração' },
+      })
+    ).status(),
+  ).toBe(200);
+  await checkPublic(false);
+  expect(
+    (
+      await request.post(`${apiUrl}/admin/features/${id}/reject`, {
+        headers,
+        data: { reason: 'Necessita correção' },
+      })
+    ).status(),
+  ).toBe(200);
+  await checkPublic(false);
+  const editable = await request.get(`${apiUrl}/features/editable`, {
+    headers,
+  });
+  expect((await editable.json()).features).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ id, status: 'rejected' }),
+    ]),
+  );
+});
+
 test('API real: token inválido no mapa preserva desenho e pede novo login', async ({
   page,
 }) => {
@@ -104,7 +188,7 @@ for (const role of ['editor', 'admin'] as const) {
       await expect(form.getByLabel('Nome')).toHaveValue(name);
       await form.getByRole('button', { name: 'Salvar feature' }).click();
       await expect(page.getByTestId('feature-save-success')).toHaveText(
-        'Feature salva com sucesso.',
+        'Feature salva com sucesso. Aguardando aprovação para aparecer no mapa público.',
       );
       const row = await db('campus_features')
         .where({ name, created_by: account.id })
