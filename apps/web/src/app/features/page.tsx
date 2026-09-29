@@ -4,15 +4,9 @@ import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
 import { apiUrl, getToken, saveToken, clearToken } from '../session';
 import GeometryPreview, { type Geometry } from '../components/GeometryPreview';
+import type { EditableCampusFeature } from '@campus-map/shared';
 
-type EditableFeature = {
-  id: number;
-  name: string;
-  category: string;
-  description: string | null;
-  status: string;
-  geometry: { type: string; coordinates: unknown };
-};
+type EditableFeature = EditableCampusFeature;
 
 export default function FeaturesPage() {
   const [token, setToken] = useState<string | null>(null);

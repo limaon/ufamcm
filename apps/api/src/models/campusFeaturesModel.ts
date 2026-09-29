@@ -1,5 +1,6 @@
 import { db } from '../lib/db.js';
 import type { UpdateCampusFeatureInput } from '../schemas/campusFeatureSchema.js';
+import type { FeatureGeometry } from '@campus-map/shared';
 
 export async function updateCampusFeature(
   id: number,
@@ -85,16 +86,11 @@ export async function listPendingCampusFeatures() {
     .orderBy('created_at', 'asc');
 }
 
-type GeometryInput = {
-  type: 'Point' | 'LineString' | 'Polygon';
-  coordinates: unknown;
-};
-
 type CreateCampusFeatureInput = {
   name: string;
   category: string;
   description?: string;
-  geometry: GeometryInput;
+  geometry: FeatureGeometry;
   createdBy?: number;
 };
 

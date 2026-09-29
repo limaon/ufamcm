@@ -92,6 +92,21 @@ restrição de acesso para editor. Usuários e features temporários têm identi
 O processo dos testes deve usar a mesma `DATABASE_URL` da API (ou o mesmo padrão
 local). A URL da API segue `NEXT_PUBLIC_API_URL`, com padrão `http://localhost:3001`.
 
+## Contratos compartilhados
+
+Os tipos públicos de domínio ficam em `packages/shared/src/index.ts` e são
+consumidos pela API e pelo frontend via `@campus-map/shared`. O pacote concentra:
+
+- status e roles (`FeatureStatus`, `UserRole`);
+- geometrias GeoJSON suportadas e posições;
+- `FeatureCollection` e features editáveis;
+- respostas de autenticação e erros;
+- payloads de criação, edição e curadoria.
+
+Ao alterar um contrato da API, atualize primeiro esse pacote e execute
+`npm run typecheck` na raiz. Assim, divergências entre os campos retornados pela
+API e os campos consumidos pelo frontend aparecem durante a compilação.
+
 ## Edição de features pela API
 
 `PATCH /features/:id` exige `Authorization: Bearer <token>`.

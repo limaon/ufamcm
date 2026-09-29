@@ -5,14 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiUrl, getToken, clearToken } from '../session';
 import GeometryPreview from '../components/GeometryPreview';
+import type { EditableCampusFeature } from '@campus-map/shared';
 
-type PendingFeature = {
-  id: number;
-  name: string;
-  category: string;
-  description: string | null;
-  geometry: { type: string; coordinates: unknown };
-};
+type PendingFeature = EditableCampusFeature;
 
 export default function AdminPage() {
   const router = useRouter();

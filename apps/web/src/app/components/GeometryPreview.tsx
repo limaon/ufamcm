@@ -12,8 +12,9 @@ import Fill from 'ol/style/Fill.js';
 import Stroke from 'ol/style/Stroke.js';
 import Style from 'ol/style/Style.js';
 import { getCategoryColor } from './featureStyles';
+import type { FeatureGeometry } from '@campus-map/shared';
 
-export type Geometry = { type: string; coordinates: unknown };
+export type Geometry = FeatureGeometry;
 
 export default function GeometryPreview({
   geometry,
