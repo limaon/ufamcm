@@ -5,9 +5,12 @@ import { db } from './lib/db.js';
 import {
   createCampusFeature,
   listCampusFeatures,
+  listPendingCampusFeatures,
+  reviewCampusFeature,
 } from './models/campusFeaturesModel.js';
 
 import { createCampusFeatureSchema } from './schemas/campusFeatureSchema.js';
+import { rejectFeatureSchema } from './schemas/featureReviewSchema.js';
 import { loginSchema } from './schemas/userSchema.js';
 import { authenticateUser } from './services/authService.js';
 import { requireAuth } from './middlewares/authMiddleware.js';
@@ -77,6 +80,73 @@ app.get('/auth/me', requireAuth, (request, response) => {
     user: request.auth,
   });
 });
+
+app.get(
+  '/admin/features/pending',
+  requireAuth,
+  requireRole('admin'),
+  async (_request, response) => {
+    const features = await listPendingCampusFeatures();
+
+    response.json({ features });
+  },
+);
+
+app.post(
+  '/admin/features/:id/approve',
+  requireAuth,
+  requireRole('admin'),
+  async (request, response) => {
+    const feature = await reviewCampusFeature(Number(request.params.id), {
+      status: 'approved',
+      reviewedBy: request.auth!.id,
+    });
+
+    if (!feature) {
+      response.status(404).json({
+        error: 'Feature pendente não encontrada',
+      });
+
+      return;
+    }
+
+    response.json({ feature });
+  },
+);
+
+app.post(
+  '/admin/features/:id/reject',
+  requireAuth,
+  requireRole('admin'),
+  async (request, response) => {
+    const parsed = rejectFeatureSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      response.status(400).json({
+        error: 'Justificativa obrigatória',
+        details: parsed.error.issues,
+      });
+
+      return;
+    }
+
+    const feature = await reviewCampusFeature(Number(request.params.id), {
+      status: 'rejected',
+      reviewedBy: request.auth!.id,
+      rejectionReason: parsed.data.reason,
+    });
+
+    if (!feature) {
+      response.status(404).json({
+        error: 'Feature pendente não encontrada',
+      });
+
+      return;
+    }
+
+    response.json({ feature });
+  },
+);
 
 app.get('/db-health', async (_request, response) => {
   const result = await db.raw('SELECT 1 AS connected');
