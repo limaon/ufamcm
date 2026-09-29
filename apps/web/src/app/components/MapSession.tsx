@@ -2,6 +2,7 @@
 
 import { type FormEvent, useState } from 'react';
 import { apiUrl, clearToken, saveToken, useSessionToken } from '../session';
+import { apiRequest } from '../../lib/apiClient';
 
 export default function MapSession() {
   const token = useSessionToken();
@@ -15,18 +16,17 @@ export default function MapSession() {
     setBusy(true);
     setError('');
     try {
-      const response = await fetch(`${apiUrl}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: data.get('email'),
-          password: data.get('password'),
-        }),
-      });
-      if (response.status === 401) throw new Error('Credenciais inválidas.');
-      if (!response.ok)
-        throw new Error('Não foi possível entrar. Tente novamente.');
-      const authentication = await response.json();
+      const authentication = await apiRequest<{ token: string }>(
+        `${apiUrl}/auth/login`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: data.get('email'),
+            password: data.get('password'),
+          }),
+        },
+      );
       form.reset();
       saveToken(authentication.token);
     } catch (cause) {

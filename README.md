@@ -107,6 +107,23 @@ Ao alterar um contrato da API, atualize primeiro esse pacote e execute
 `npm run typecheck` na raiz. Assim, divergências entre os campos retornados pela
 API e os campos consumidos pelo frontend aparecem durante a compilação.
 
+## Contrato de erros
+
+Erros de rota inexistente e falhas inesperadas da API retornam JSON no formato:
+
+```json
+{
+  "error": "Mensagem segura para o cliente",
+  "code": "CODIGO_ESTAVEL",
+  "details": []
+}
+```
+
+`details` aparece apenas quando há informações de validação. Detalhes internos
+de banco, stack traces e credenciais nunca são enviados ao cliente. O frontend
+usa `apps/web/src/lib/apiClient.ts` para converter respostas HTTP e falhas de
+conexão em erros consumíveis pela interface.
+
 ## Edição de features pela API
 
 `PATCH /features/:id` exige `Authorization: Bearer <token>`.

@@ -19,6 +19,10 @@ import { loginSchema } from './schemas/userSchema.js';
 import { authenticateUser } from './services/authService.js';
 import { requireAuth } from './middlewares/authMiddleware.js';
 import { requireRole } from './middlewares/roleMiddleware.js';
+import {
+  errorMiddleware,
+  notFoundMiddleware,
+} from './middlewares/errorMiddleware.js';
 
 export const app = express();
 
@@ -269,3 +273,6 @@ app.patch(
     response.json({ feature: result.feature });
   },
 );
+
+app.use(notFoundMiddleware);
+app.use(errorMiddleware);
