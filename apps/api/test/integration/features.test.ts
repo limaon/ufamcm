@@ -1,9 +1,30 @@
 import request from 'supertest';
 import { app } from '../../src/app.js';
 import { db } from '../../src/lib/db.js';
+import { createUser } from '../../src/models/usersModel.js';
+import { hashPassword } from '../../src/services/passwordService.js';
 
 describe('API do Campus Map', () => {
+  const email = `features-${Date.now()}@example.com`;
+  let authToken: string;
+
+  beforeAll(async () => {
+    await createUser({
+      name: 'Editor de Features',
+      email,
+      passwordHash: await hashPassword('senha-segura-123'),
+      role: 'editor',
+    });
+
+    const loginResponse = await request(app)
+      .post('/auth/login')
+      .send({ email, password: 'senha-segura-123' });
+
+    authToken = loginResponse.body.token;
+  });
+
   afterAll(async () => {
+    await db('users').where({ email }).delete();
     await db.destroy();
   });
 
@@ -47,6 +68,7 @@ describe('API do Campus Map', () => {
   it('rejeita uma feature inválida', async () => {
     const response = await request(app)
       .post('/features')
+      .set('Authorization', `Bearer ${authToken}`)
       .send({
         name: '',
         category: '',
@@ -72,6 +94,7 @@ describe('API do Campus Map', () => {
   it('cria uma feature válida e a persiste no banco', async () => {
     const response = await request(app)
       .post('/features')
+      .set('Authorization', `Bearer ${authToken}`)
       .send({
         name: 'Feature criada pelo teste',
         category: 'building',
@@ -93,6 +116,7 @@ describe('API do Campus Map', () => {
       name: 'Feature criada pelo teste',
       category: 'building',
       status: 'pending',
+      created_by: expect.any(Number),
     });
 
     await db('campus_features').where({ id: response.body.id }).delete();

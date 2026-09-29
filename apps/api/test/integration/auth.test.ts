@@ -1,11 +1,8 @@
-import { jest } from '@jest/globals';
 import request from 'supertest';
 import { app } from '../../src/app.js';
 import { db } from '../../src/lib/db.js';
 import { createUser } from '../../src/models/usersModel.js';
 import { hashPassword } from '../../src/services/passwordService.js';
-
-jest.setTimeout(30_000);
 
 describe('POST /auth/login', () => {
   const email = `login-${Date.now()}@example.com`;

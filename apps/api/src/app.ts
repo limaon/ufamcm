@@ -11,6 +11,7 @@ import { createCampusFeatureSchema } from './schemas/campusFeatureSchema.js';
 import { loginSchema } from './schemas/userSchema.js';
 import { authenticateUser } from './services/authService.js';
 import { requireAuth } from './middlewares/authMiddleware.js';
+import { requireRole } from './middlewares/roleMiddleware.js';
 
 export const app = express();
 
@@ -119,19 +120,33 @@ app.get('/features', async (_request, response) => {
   });
 });
 
-app.post('/features', async (request, response) => {
-  const parsed = createCampusFeatureSchema.safeParse(request.body);
+app.post(
+  '/features',
+  requireAuth,
+  requireRole('editor', 'admin'),
+  async (request, response) => {
+    if (!request.auth) {
+      response.status(401).json({ error: 'Token não fornecido' });
 
-  if (!parsed.success) {
-    response.status(400).json({
-      error: 'Dados inválidos',
-      details: parsed.error.issues,
+      return;
+    }
+
+    const parsed = createCampusFeatureSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      response.status(400).json({
+        error: 'Dados inválidos',
+        details: parsed.error.issues,
+      });
+
+      return;
+    }
+
+    const feature = await createCampusFeature({
+      ...parsed.data,
+      createdBy: request.auth.id,
     });
 
-    return;
-  }
-
-  const feature = await createCampusFeature(parsed.data);
-
-  response.status(201).json(feature);
-});
+    response.status(201).json(feature);
+  },
+);

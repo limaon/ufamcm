@@ -25,6 +25,7 @@ type CreateCampusFeatureInput = {
   category: string;
   description?: string;
   geometry: GeometryInput;
+  createdBy?: number;
 };
 
 export async function createCampusFeature(input: CreateCampusFeatureInput) {
@@ -33,6 +34,7 @@ export async function createCampusFeature(input: CreateCampusFeatureInput) {
       name: input.name,
       category: input.category,
       description: input.description ?? null,
+      created_by: input.createdBy ?? null,
       geometry: db.raw('ST_SetSRID(ST_GeomFromGeoJSON(?), 4326)', [
         JSON.stringify(input.geometry),
       ]),

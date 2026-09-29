@@ -8,6 +8,7 @@ module.exports = {
   ...preset,
 
   testEnvironment: 'node',
+  testTimeout: 30_000,
 
   roots: ['<rootDir>/src', '<rootDir>/test'],
 
