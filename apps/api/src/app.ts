@@ -10,6 +10,7 @@ import {
 import { createCampusFeatureSchema } from './schemas/campusFeatureSchema.js';
 import { loginSchema } from './schemas/userSchema.js';
 import { authenticateUser } from './services/authService.js';
+import { requireAuth } from './middlewares/authMiddleware.js';
 
 export const app = express();
 
@@ -60,6 +61,20 @@ app.post('/auth/login', async (request, response) => {
   }
 
   response.json(authentication);
+});
+
+app.get('/auth/me', requireAuth, (request, response) => {
+  if (!request.auth) {
+    response.status(401).json({
+      error: 'Token inválido',
+    });
+
+    return;
+  }
+
+  response.json({
+    user: request.auth,
+  });
 });
 
 app.get('/db-health', async (_request, response) => {

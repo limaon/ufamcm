@@ -1,8 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { findUserByEmail } from '../models/usersModel.js';
+import { JWT_SECRET } from '../lib/authConfig.js';
 import { verifyPassword } from './passwordService.js';
-
-const JWT_SECRET = process.env.JWT_SECRET ?? 'development-secret-change-me';
 
 type AuthenticatedUser = {
   id: number;

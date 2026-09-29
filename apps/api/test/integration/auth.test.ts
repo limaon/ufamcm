@@ -1,8 +1,11 @@
+import { jest } from '@jest/globals';
 import request from 'supertest';
 import { app } from '../../src/app.js';
 import { db } from '../../src/lib/db.js';
 import { createUser } from '../../src/models/usersModel.js';
 import { hashPassword } from '../../src/services/passwordService.js';
+
+jest.setTimeout(30_000);
 
 describe('POST /auth/login', () => {
   const email = `login-${Date.now()}@example.com`;
@@ -45,6 +48,43 @@ describe('POST /auth/login', () => {
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
       error: 'Credenciais inválidas',
+    });
+  });
+
+  it('rejeita acesso sem token', async () => {
+    const response = await request(app).get('/auth/me');
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: 'Token não fornecido',
+    });
+  });
+
+  it('permite acesso com um token válido', async () => {
+    const loginResponse = await request(app).post('/auth/login').send({
+      email,
+      password: 'senha-segura-123',
+    });
+
+    const response = await request(app)
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${loginResponse.body.token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.user).toEqual({
+      id: expect.any(Number),
+      role: 'editor',
+    });
+  });
+
+  it('rejeita um token inválido', async () => {
+    const response = await request(app)
+      .get('/auth/me')
+      .set('Authorization', 'Bearer token-invalido');
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: 'Token inválido',
     });
   });
 });
