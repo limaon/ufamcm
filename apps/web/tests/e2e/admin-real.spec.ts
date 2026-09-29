@@ -272,6 +272,9 @@ for (const role of ['editor', 'admin'] as const) {
           .getByRole('button', { name: 'Editar', exact: true })
           .click();
         await expect(page.getByTestId('geometry-preview')).toHaveCount(1);
+        await expect(
+          page.getByLabel('Pré-visualização editável da geometria'),
+        ).toBeVisible();
         await page
           .getByLabel('Nome', { exact: true })
           .fill(`${targetName} editada`);

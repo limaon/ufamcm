@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
 import { apiUrl, getToken, saveToken, clearToken } from '../session';
-import GeometryPreview from '../components/GeometryPreview';
+import GeometryPreview, { type Geometry } from '../components/GeometryPreview';
 
 type EditableFeature = {
   id: number;
@@ -221,6 +221,10 @@ export default function FeaturesPage() {
                   }
                 })()}
                 category={selected.category}
+                editable
+                onGeometryChange={(updated: Geometry) => {
+                  setGeometryDraft(JSON.stringify(updated, null, 2));
+                }}
               />
               <fieldset disabled={busy} style={{ display: 'grid', gap: 8 }}>
                 <legend>Dados da feature</legend>

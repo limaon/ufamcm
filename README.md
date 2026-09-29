@@ -130,3 +130,10 @@ feature aguarda nova aprovação. Use **Sair** para encerrar a sessão de ediç�
 
 Os testes em `admin-real.spec.ts` também cobrem edição pelo editor e pelo admin,
 restrição da listagem, validação do formulário e persistência após recarga.
+
+### Edição visual da geometria
+
+Ao abrir uma feature, o preview contém uma camada editável. Arraste os pontos
+ou vértices diretamente no mapa para alterar a geometria; o campo GeoJSON é
+atualizado junto com o movimento. Também é possível corrigir o GeoJSON
+manualmente e conferir o resultado no preview antes de salvar.

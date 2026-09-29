@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import Feature from 'ol/Feature.js';
 import Map from 'ol/Map.js';
 import View from 'ol/View.js';
+import Modify from 'ol/interaction/Modify.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
 import VectorLayer from 'ol/layer/Vector.js';
 import VectorSource from 'ol/source/Vector.js';
@@ -12,14 +13,18 @@ import Stroke from 'ol/style/Stroke.js';
 import Style from 'ol/style/Style.js';
 import { getCategoryColor } from './featureStyles';
 
-type Geometry = { type: string; coordinates: unknown };
+export type Geometry = { type: string; coordinates: unknown };
 
 export default function GeometryPreview({
   geometry,
   category,
+  editable = false,
+  onGeometryChange,
 }: {
   geometry: Geometry | null;
   category?: string;
+  editable?: boolean;
+  onGeometryChange?: (geometry: Geometry) => void;
 }) {
   const target = useRef<HTMLDivElement>(null);
 
@@ -56,6 +61,17 @@ export default function GeometryPreview({
       controls: [],
       interactions: [],
     });
+    if (editable && onGeometryChange) {
+      const modify = new Modify({ source });
+      modify.on('modifyend', () => {
+        const updated = new GeoJSON().writeGeometryObject(
+          feature.getGeometry()!,
+          { featureProjection: 'EPSG:3857', dataProjection: 'EPSG:4326' },
+        ) as Geometry;
+        onGeometryChange(updated);
+      });
+      map.addInteraction(modify);
+    }
     const extent = source.getExtent();
     if (extent) {
       map.getView().fit(extent, {
@@ -65,13 +81,17 @@ export default function GeometryPreview({
       });
     }
     return () => map.setTarget(undefined);
-  }, [geometry, category]);
+  }, [geometry, category, editable, onGeometryChange]);
 
   return (
     <div
       ref={target}
       data-testid="geometry-preview"
-      aria-label="Pré-visualização da geometria"
+      aria-label={
+        editable
+          ? 'Pré-visualização editável da geometria'
+          : 'Pré-visualização da geometria'
+      }
       style={{
         width: '100%',
         height: 220,
