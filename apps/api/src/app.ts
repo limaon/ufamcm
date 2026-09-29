@@ -8,6 +8,8 @@ import {
 } from './models/campusFeaturesModel.js';
 
 import { createCampusFeatureSchema } from './schemas/campusFeatureSchema.js';
+import { loginSchema } from './schemas/userSchema.js';
+import { authenticateUser } from './services/authService.js';
 
 export const app = express();
 
@@ -30,6 +32,34 @@ app.get('/version', (_request, response) => {
     name: 'campus-map-api',
     version: '0.1.0',
   });
+});
+
+app.post('/auth/login', async (request, response) => {
+  const parsed = loginSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    response.status(400).json({
+      error: 'Dados inválidos',
+      details: parsed.error.issues,
+    });
+
+    return;
+  }
+
+  const authentication = await authenticateUser(
+    parsed.data.email,
+    parsed.data.password,
+  );
+
+  if (!authentication) {
+    response.status(401).json({
+      error: 'Credenciais inválidas',
+    });
+
+    return;
+  }
+
+  response.json(authentication);
 });
 
 app.get('/db-health', async (_request, response) => {
