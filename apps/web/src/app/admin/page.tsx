@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 
 type PendingFeature = {
@@ -11,6 +11,7 @@ type PendingFeature = {
 };
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const sessionStorageKey = 'campus-map.admin-token';
 
 export default function AdminPage() {
   const [token, setToken] = useState<string | null>(null);
@@ -20,10 +21,12 @@ export default function AdminPage() {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [restoringSession, setRestoringSession] = useState(true);
 
   async function checkResponse(response: Response) {
     if (response.ok) return;
     if (response.status === 401) {
+      window.localStorage.removeItem(sessionStorageKey);
       setToken(null);
       setFeatures([]);
       setLoaded(false);
@@ -43,6 +46,24 @@ export default function AdminPage() {
     setFeatures(data.features);
     setLoaded(true);
   }
+
+  useEffect(() => {
+    const savedToken = window.localStorage.getItem(sessionStorageKey);
+
+    if (!savedToken) {
+      setRestoringSession(false);
+      return;
+    }
+
+    setToken(savedToken);
+    loadPending(savedToken)
+      .catch((cause) => {
+        setError(cause instanceof Error ? cause.message : 'Erro de conexão.');
+      })
+      .finally(() => {
+        setRestoringSession(false);
+      });
+  }, []);
 
   async function login(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,12 +88,23 @@ export default function AdminPage() {
       }
       form.reset();
       setToken(authentication.token);
+      window.localStorage.setItem(sessionStorageKey, authentication.token);
       await loadPending(authentication.token);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Erro de conexão.');
     } finally {
       setBusy(false);
     }
+  }
+
+  function logout() {
+    window.localStorage.removeItem(sessionStorageKey);
+    setToken(null);
+    setFeatures([]);
+    setLoaded(false);
+    setReasons({});
+    setError('');
+    setMessage('');
   }
 
   async function refresh() {
@@ -125,7 +157,9 @@ export default function AdminPage() {
       <h1>Curadoria administrativa</h1>
       {error && <p role="alert">{error}</p>}
       <p role="status">{busy ? 'Processando...' : message}</p>
-      {!token ? (
+      {restoringSession ? (
+        <p>Restaurando sessão...</p>
+      ) : !token ? (
         <form onSubmit={login}>
           <fieldset disabled={busy} style={{ display: 'grid', gap: 12 }}>
             <legend>Login de administrador</legend>
@@ -151,9 +185,14 @@ export default function AdminPage() {
       ) : (
         <section aria-label="Features pendentes">
           <h2>Features pendentes</h2>
-          <button disabled={busy} onClick={refresh}>
-            Atualizar lista
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button disabled={busy} onClick={refresh}>
+              Atualizar lista
+            </button>
+            <button disabled={busy} onClick={logout}>
+              Sair
+            </button>
+          </div>
           {loaded && !features.length && <p>Nenhuma feature pendente.</p>}
           {features.map((feature) => (
             <article

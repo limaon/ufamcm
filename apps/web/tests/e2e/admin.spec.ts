@@ -111,3 +111,36 @@ test('administrador entra, aprova e rejeita pendências', async ({ page }) => {
   await trail.getByRole('button', { name: 'Rejeitar' }).click();
   await expect(page.getByText('Nenhuma feature pendente.')).toBeVisible();
 });
+
+test('persiste a sessão ao recarregar e permite sair', async ({ page }) => {
+  await page.route('http://localhost:3001/**', async (route) => {
+    const req = route.request();
+    const path = new URL(req.url()).pathname;
+
+    if (path === '/auth/login') {
+      await route.fulfill({
+        json: { token: 'persistent-token', user: { role: 'admin' } },
+      });
+      return;
+    }
+
+    expect(req.headers().authorization).toBe('Bearer persistent-token');
+    expect(path).toBe('/admin/features/pending');
+    await route.fulfill({ json: { features: [] } });
+  });
+
+  await page.goto('/admin');
+  await page.getByLabel('Email').fill('admin@example.com');
+  await page.getByLabel('Senha', { exact: true }).fill('senha-de-teste');
+  await page.getByRole('button', { name: 'Entrar' }).click();
+  await expect(page.getByRole('button', { name: 'Sair' })).toBeVisible();
+  await expect(page.getByText('Nenhuma feature pendente.')).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Sair' })).toBeVisible();
+  await expect(page.getByText('Nenhuma feature pendente.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Sair' }).click();
+  await expect(page.getByRole('button', { name: 'Entrar' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sair' })).toHaveCount(0);
+});
