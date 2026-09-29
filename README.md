@@ -63,3 +63,28 @@ restrição de acesso para editor. Usuários e features temporários têm identi
 únicos e são removidos ao final de cada teste, inclusive em caso de falha.
 O processo dos testes deve usar a mesma `DATABASE_URL` da API (ou o mesmo padrão
 local). A URL da API segue `NEXT_PUBLIC_API_URL`, com padrão `http://localhost:3001`.
+
+## Edição de features pela API
+
+`PATCH /features/:id` exige `Authorization: Bearer <token>`.
+Editor pode editar somente features de sua autoria; admin pode editar qualquer
+feature, inclusive registros históricos sem autor.
+
+Envie apenas os campos que deseja alterar:
+
+```json
+{
+  "name": "Biblioteca Central",
+  "description": "Entrada principal atualizada"
+}
+```
+
+Os campos editáveis são `name`, `category`, `description` e `geometry` (GeoJSON).
+`description: null` remove a descrição. Campos omitidos são preservados.
+Autoria e campos de curadoria não podem ser enviados nesse endpoint.
+Toda edição, inclusive administrativa, retorna o status para `pending` e limpa
+os metadados da revisão anterior, exigindo nova aprovação.
+Retornos: `200` com `{ feature }`, `400` para dados inválidos, `401` sem sessão
+válida, `403` sem permissão e `404` para feature inexistente.
+
+O formulário de edição no frontend será implementado na próxima etapa.

@@ -1,4 +1,51 @@
 import { db } from '../lib/db.js';
+import type { UpdateCampusFeatureInput } from '../schemas/campusFeatureSchema.js';
+
+export async function updateCampusFeature(
+  id: number,
+  input: UpdateCampusFeatureInput,
+  actor: { id: number; role: 'editor' | 'admin' },
+) {
+  return db.transaction(async (trx) => {
+    const current = await trx('campus_features')
+      .where({ id })
+      .forUpdate()
+      .first();
+    if (!current) return { outcome: 'not-found' as const };
+    if (actor.role !== 'admin' && current.created_by !== actor.id) {
+      return { outcome: 'forbidden' as const };
+    }
+
+    const [feature] = await trx('campus_features')
+      .where({ id })
+      .update({
+        name: input.name,
+        category: input.category,
+        description: input.description,
+        geometry:
+          input.geometry === undefined
+            ? undefined
+            : trx.raw('ST_SetSRID(ST_GeomFromGeoJSON(?), 4326)', [
+                JSON.stringify(input.geometry),
+              ]),
+        status: 'pending',
+        reviewed_by: null,
+        reviewed_at: null,
+        rejection_reason: null,
+        updated_at: trx.fn.now(),
+      })
+      .returning([
+        'id',
+        'name',
+        'category',
+        'description',
+        'status',
+        'created_by',
+        'updated_at',
+      ]);
+    return { outcome: 'updated' as const, feature };
+  });
+}
 
 export async function listCampusFeatures() {
   return db('campus_features')

@@ -25,3 +25,18 @@ export const createCampusFeatureSchema = z.object({
   description: z.string().trim().optional(),
   geometry: geometrySchema,
 });
+
+export const updateCampusFeatureSchema = createCampusFeatureSchema
+  .extend({ description: z.string().trim().nullable().optional() })
+  .partial()
+  .strict()
+  .refine(
+    (input) => Object.values(input).some((value) => value !== undefined),
+    {
+      message: 'Informe ao menos um campo para edição',
+    },
+  );
+
+export type UpdateCampusFeatureInput = z.infer<
+  typeof updateCampusFeatureSchema
+>;

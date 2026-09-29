@@ -7,9 +7,13 @@ import {
   listCampusFeatures,
   listPendingCampusFeatures,
   reviewCampusFeature,
+  updateCampusFeature,
 } from './models/campusFeaturesModel.js';
 
-import { createCampusFeatureSchema } from './schemas/campusFeatureSchema.js';
+import {
+  createCampusFeatureSchema,
+  updateCampusFeatureSchema,
+} from './schemas/campusFeatureSchema.js';
 import { rejectFeatureSchema } from './schemas/featureReviewSchema.js';
 import { loginSchema } from './schemas/userSchema.js';
 import { authenticateUser } from './services/authService.js';
@@ -21,7 +25,7 @@ export const app = express();
 app.use(
   cors({
     origin: 'http://localhost:3000',
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 );
@@ -218,5 +222,37 @@ app.post(
     });
 
     response.status(201).json(feature);
+  },
+);
+
+app.patch(
+  '/features/:id',
+  requireAuth,
+  requireRole('editor', 'admin'),
+  async (request, response) => {
+    const id = Number(request.params.id);
+    if (!Number.isInteger(id) || id <= 0 || id > 2147483647) {
+      response.status(400).json({ error: 'ID inválido' });
+      return;
+    }
+    const parsed = updateCampusFeatureSchema.safeParse(request.body);
+    if (!parsed.success) {
+      response
+        .status(400)
+        .json({ error: 'Dados inválidos', details: parsed.error.issues });
+      return;
+    }
+    const result = await updateCampusFeature(id, parsed.data, request.auth!);
+    if (result.outcome === 'not-found') {
+      response.status(404).json({ error: 'Feature não encontrada' });
+      return;
+    }
+    if (result.outcome === 'forbidden') {
+      response
+        .status(403)
+        .json({ error: 'Você só pode editar suas próprias features' });
+      return;
+    }
+    response.json({ feature: result.feature });
   },
 );
