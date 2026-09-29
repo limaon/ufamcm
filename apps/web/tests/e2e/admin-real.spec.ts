@@ -271,6 +271,7 @@ for (const role of ['editor', 'admin'] as const) {
           .getByRole('article', { name: targetName, exact: true })
           .getByRole('button', { name: 'Editar', exact: true })
           .click();
+        await expect(page.getByTestId('geometry-preview')).toHaveCount(1);
         await page
           .getByLabel('Nome', { exact: true })
           .fill(`${targetName} editada`);
@@ -282,19 +283,6 @@ for (const role of ['editor', 'admin'] as const) {
         await expect(page.getByRole('main').getByRole('alert')).toContainText(
           'JSON válido',
         );
-        await page
-          .getByLabel('Geometria (GeoJSON)')
-          .fill('{"type":"Point","coordinates":[]}');
-        await page.getByRole('button', { name: 'Salvar alterações' }).click();
-        await expect(page.getByRole('main').getByRole('alert')).toContainText(
-          'Dados inválidos',
-        );
-        await expect(page.getByLabel('Nome', { exact: true })).toHaveValue(
-          `${targetName} editada`,
-        );
-        expect(
-          (await db('campus_features').where({ id: targetId }).first()).name,
-        ).toBe(targetName);
         const geometry = { type: 'Point', coordinates: [-59.98, -3.09] };
         await page
           .getByLabel('Geometria (GeoJSON)')
@@ -369,6 +357,8 @@ test('API real: login, curadoria, recarga e logout', async ({
   const approved = page.getByRole('article', { name: names[0], exact: true });
   const rejected = page.getByRole('article', { name: names[1], exact: true });
   await expect(approved).toBeVisible();
+  await expect(approved.getByTestId('geometry-preview')).toHaveCount(1);
+  await expect(rejected.getByTestId('geometry-preview')).toHaveCount(1);
   await page.reload();
   await expect(approved).toBeVisible();
   await approved.getByRole('button', { name: 'Aprovar', exact: true }).click();

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
 import { apiUrl, getToken, saveToken, clearToken } from '../session';
+import GeometryPreview from '../components/GeometryPreview';
 
 type EditableFeature = {
   id: number;
@@ -20,12 +21,14 @@ export default function FeaturesPage() {
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [geometryDraft, setGeometryDraft] = useState('');
 
   function logout() {
     clearToken();
     setToken(null);
     setFeatures([]);
     setSelected(null);
+    setGeometryDraft('');
     setMessage('');
     setError('');
   }
@@ -126,7 +129,7 @@ export default function FeaturesPage() {
     setError('');
     setMessage('');
     try {
-      geometry = JSON.parse(String(data.get('geometry')));
+      geometry = JSON.parse(geometryDraft);
     } catch {
       setError('Informe um JSON válido para a geometria.');
       return;
@@ -209,6 +212,16 @@ export default function FeaturesPage() {
                 Salvar retorna a feature para pendente e remove a revisão
                 anterior.
               </p>
+              <GeometryPreview
+                geometry={(() => {
+                  try {
+                    return JSON.parse(geometryDraft);
+                  } catch {
+                    return null;
+                  }
+                })()}
+                category={selected.category}
+              />
               <fieldset disabled={busy} style={{ display: 'grid', gap: 8 }}>
                 <legend>Dados da feature</legend>
                 <label htmlFor="name">Nome</label>
@@ -236,7 +249,8 @@ export default function FeaturesPage() {
                   id="geometry"
                   name="geometry"
                   rows={8}
-                  defaultValue={JSON.stringify(selected.geometry, null, 2)}
+                  value={geometryDraft}
+                  onChange={(event) => setGeometryDraft(event.target.value)}
                   required
                 />
                 <p>
@@ -248,6 +262,7 @@ export default function FeaturesPage() {
                   type="button"
                   onClick={() => {
                     setSelected(null);
+                    setGeometryDraft('');
                     setError('');
                   }}
                 >
@@ -279,6 +294,9 @@ export default function FeaturesPage() {
                     disabled={busy}
                     onClick={() => {
                       setSelected(feature);
+                      setGeometryDraft(
+                        JSON.stringify(feature.geometry, null, 2),
+                      );
                       setMessage('');
                       setError('');
                     }}

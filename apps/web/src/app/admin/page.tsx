@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiUrl, getToken, clearToken } from '../session';
+import GeometryPreview from '../components/GeometryPreview';
 
 type PendingFeature = {
   id: number;
   name: string;
   category: string;
   description: string | null;
+  geometry: { type: string; coordinates: unknown };
 };
 
 export default function AdminPage() {
@@ -160,6 +162,10 @@ export default function AdminPage() {
               <h3>{feature.name}</h3>
               <p>Categoria: {feature.category}</p>
               {feature.description && <p>{feature.description}</p>}
+              <GeometryPreview
+                geometry={feature.geometry}
+                category={feature.category}
+              />
               <fieldset disabled={busy} style={{ display: 'grid', gap: 8 }}>
                 <legend>Decisão da revisão</legend>
                 <button onClick={() => review(feature.id, 'approve')}>
