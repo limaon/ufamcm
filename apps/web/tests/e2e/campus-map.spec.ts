@@ -194,3 +194,38 @@ test('salva uma feature desenhada pela API', async ({ page }) => {
   );
   await expect(form).not.toBeVisible();
 });
+
+test('busca features pelo nome', async ({ page }) => {
+  await page.goto('/');
+
+  const map = page.getByTestId('campus-map');
+
+  await expect(map).toHaveAttribute('data-features-loaded', 'true');
+
+  const search = page.getByRole('searchbox', {
+    name: 'Buscar features',
+  });
+
+  await search.fill('Biblioteca Central');
+
+  await expect(page.getByTestId('search-results')).toContainText(
+    'Biblioteca Central',
+  );
+});
+
+test('busca features pela categoria', async ({ page }) => {
+  await page.goto('/');
+
+  const map = page.getByTestId('campus-map');
+
+  await expect(map).toHaveAttribute('data-features-loaded', 'true');
+
+  await page
+    .getByRole('searchbox', { name: 'Buscar features' })
+    .fill('building');
+
+  const results = page.getByTestId('search-results');
+
+  await expect(results).toContainText('building');
+  await expect(results.locator('button')).not.toHaveCount(0);
+});

@@ -19,6 +19,7 @@ import 'ol/ol.css';
 import LayerControls from './LayerControls';
 import { getCategoryColor } from './featureStyles';
 import DrawControls, { type GeometryType } from './DrawControls';
+import SearchControls, { type SearchResult } from './SearchControls';
 
 type SelectedFeature = {
   name: string;
@@ -46,6 +47,8 @@ export default function CampusMap() {
   const [featureName, setFeatureName] = useState('');
   const [featureCategory, setFeatureCategory] = useState('building');
   const [featureDescription, setFeatureDescription] = useState('');
+  const [loadedFeatures, setLoadedFeatures] = useState<Feature[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [saveStatus, setSaveStatus] = useState<
     'idle' | 'saving' | 'success' | 'error'
   >('idle');
@@ -159,6 +162,7 @@ export default function CampusMap() {
         });
 
         featureSource.addFeatures(features);
+        setLoadedFeatures(features);
         mapElement.current?.setAttribute('data-features-loaded', 'true');
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -208,6 +212,39 @@ export default function CampusMap() {
       map.setTarget(undefined);
     };
   }, []);
+
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const searchResults: SearchResult[] = normalizedSearchQuery
+    ? loadedFeatures
+        .filter((feature) => {
+          const name = String(feature.get('name') ?? '').toLowerCase();
+          const category = String(feature.get('category') ?? '').toLowerCase();
+
+          return (
+            name.includes(normalizedSearchQuery) ||
+            category.includes(normalizedSearchQuery)
+          );
+        })
+        .map((feature) => ({
+          id: feature.getId() ?? String(feature.get('name')),
+          name: String(feature.get('name') ?? 'Sem nome'),
+          category: String(feature.get('category') ?? 'Sem categoria'),
+        }))
+    : [];
+
+  function selectSearchResult(id: number | string) {
+    const selected = loadedFeatures.find(
+      (feature) => String(feature.getId()) === String(id),
+    );
+    const geometry = selected?.getGeometry();
+
+    if (geometry && mapRef.current) {
+      mapRef.current.getView().fit(geometry.getExtent(), {
+        duration: 250,
+        maxZoom: 18,
+      });
+    }
+  }
 
   async function saveFeature(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -328,6 +365,13 @@ export default function CampusMap() {
           setFeaturesLayerVisible(visible);
           featuresLayerRef.current?.setVisible(visible);
         }}
+      />
+
+      <SearchControls
+        query={searchQuery}
+        results={searchResults}
+        onQueryChange={setSearchQuery}
+        onSelectResult={selectSearchResult}
       />
 
       <DrawControls
