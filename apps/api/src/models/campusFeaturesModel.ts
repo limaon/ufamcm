@@ -47,8 +47,8 @@ export async function updateCampusFeature(
   });
 }
 
-export async function listCampusFeatures() {
-  return db('campus_features')
+export async function listCampusFeatures(createdBy?: number) {
+  const query = db('campus_features')
     .select(
       'id',
       'name',
@@ -60,6 +60,8 @@ export async function listCampusFeatures() {
     )
     .select(db.raw('ST_AsGeoJSON(geometry)::json AS geometry'))
     .orderBy('id');
+  if (createdBy !== undefined) query.where({ created_by: createdBy });
+  return query;
 }
 
 export async function listPendingCampusFeatures() {

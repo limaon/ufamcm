@@ -125,6 +125,8 @@ export default function AdminPage() {
   return (
     <main style={{ maxWidth: 800, margin: '24px auto', padding: 16 }}>
       <Link href="/">Voltar ao mapa</Link>
+      {' · '}
+      <Link href="/features">Editar features</Link>
       <h1>Curadoria administrativa</h1>
       {error && <p role="alert">{error}</p>}
       <p role="status">{busy ? 'Processando...' : message}</p>

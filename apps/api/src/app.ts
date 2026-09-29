@@ -160,6 +160,19 @@ app.get('/db-health', async (_request, response) => {
   });
 });
 
+app.get(
+  '/features/editable',
+  requireAuth,
+  requireRole('editor', 'admin'),
+  async (request, response) => {
+    const actor = request.auth!;
+    const features = await listCampusFeatures(
+      actor.role === 'admin' ? undefined : actor.id,
+    );
+    response.json({ features });
+  },
+);
+
 app.get('/features', async (_request, response) => {
   const rows = await listCampusFeatures();
 

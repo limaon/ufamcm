@@ -146,6 +146,33 @@ describe('edição autorizada de features', () => {
     });
   });
 
+  it('lista para edição apenas registros do editor e todos para admin', async () => {
+    const own = await fixture(editorId);
+    const other = await fixture(adminId);
+    const historical = await fixture();
+    expect((await request(app).get('/features/editable')).status).toBe(401);
+    const editor = await request(app)
+      .get('/features/editable')
+      .set('Authorization', `Bearer ${editorToken}`);
+    expect(editor.status).toBe(200);
+    expect(
+      editor.body.features.map((feature: { id: number }) => feature.id),
+    ).toContain(own);
+    expect(
+      editor.body.features.map((feature: { id: number }) => feature.id),
+    ).not.toEqual(expect.arrayContaining([other]));
+    expect(
+      editor.body.features.map((feature: { id: number }) => feature.id),
+    ).not.toEqual(expect.arrayContaining([historical]));
+    const admin = await request(app)
+      .get('/features/editable')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(admin.status).toBe(200);
+    expect(
+      admin.body.features.map((feature: { id: number }) => feature.id),
+    ).toEqual(expect.arrayContaining([own, other, historical]));
+  });
+
   it('somente admin edita feature histórica sem autor', async () => {
     const id = await fixture();
     expect(

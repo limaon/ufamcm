@@ -87,4 +87,18 @@ os metadados da revisão anterior, exigindo nova aprovação.
 Retornos: `200` com `{ feature }`, `400` para dados inválidos, `401` sem sessão
 válida, `403` sem permissão e `404` para feature inexistente.
 
-O formulário de edição no frontend será implementado na próxima etapa.
+### Formulário de edição
+
+Acesse http://localhost:3000/features (link **Editar features** no mapa ou no
+painel administrativo) e entre com uma conta `editor` ou `admin`.
+`GET /features/editable` autentica e filtra a lista no servidor: somente as próprias
+features para editor, todas para admin, independentemente do status.
+
+Clique em **Editar**, altere os campos e use **Salvar alterações**. A geometria
+é editada como GeoJSON (`Point`, `LineString` ou `Polygon`), com coordenadas em
+longitude/latitude. **Cancelar** descarta o formulário sem gravar.
+Erros preservam o formulário para correção; salvar com sucesso informa que a
+feature aguarda nova aprovação. Use **Sair** para encerrar a sessão de edição.
+
+Os testes em `admin-real.spec.ts` também cobrem edição pelo editor e pelo admin,
+restrição da listagem, validação do formulário e persistência após recarga.
