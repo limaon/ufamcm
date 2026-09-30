@@ -1,0 +1,434 @@
+import { randomUUID } from 'node:crypto';
+import { expect, test as base } from '@playwright/test';
+import { db } from '../../../api/src/lib/db';
+import { createUser } from '../../../api/src/models/usersModel';
+import { hashPassword } from '../../../api/src/services/passwordService';
+import { createCampusFeature } from '../../../api/src/models/campusFeaturesModel';
+
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+
+type Account = { id: number; email: string; password: string };
+const test = base.extend<{
+  account: Account;
+  accountRole: 'admin' | 'editor';
+}>({
+  accountRole: ['admin', { option: true }],
+  account: async ({ accountRole, request }, use) => {
+    const health = await request.get(`${apiUrl}/health`);
+    expect(health.ok(), 'A API real deve estar ativa').toBeTruthy();
+    const email = `e2e-${randomUUID()}@example.com`;
+    const password = randomUUID();
+    try {
+      const user = await createUser({
+        name: 'Administrador E2E',
+        email,
+        passwordHash: await hashPassword(password),
+        role: accountRole,
+      });
+      await use({ id: user.id, email, password });
+    } finally {
+      try {
+        await db('campus_features')
+          .whereIn('created_by', db('users').select('id').where({ email }))
+          .delete();
+        await db('users').where({ email }).delete();
+      } catch (error) {
+        throw new Error('Falha ao remover os dados temporários E2E', {
+          cause: error,
+        });
+      }
+    }
+  },
+});
+
+test.afterAll(async () => {
+  await db.destroy();
+});
+
+test('API real: publicação, edição e rejeição controlam a visibilidade pública', async ({
+  page,
+  request,
+  account,
+}) => {
+  const name = `Publicação E2E ${randomUUID()}`;
+  const login = await request.post(`${apiUrl}/auth/login`, {
+    data: { email: account.email, password: account.password },
+  });
+  expect(login.status()).toBe(200);
+  const { token } = await login.json();
+  const headers = { Authorization: `Bearer ${token}` };
+  const created = await request.post(`${apiUrl}/features`, {
+    headers,
+    data: {
+      name,
+      category: 'building',
+      geometry: { type: 'Point', coordinates: [-59.982, -3.095] },
+    },
+  });
+  expect(created.status()).toBe(201);
+  const { id } = await created.json();
+
+  async function checkPublic(visible: boolean) {
+    const response = await request.get(`${apiUrl}/features`);
+    expect(response.status()).toBe(200);
+    const { features } = await response.json();
+    expect(features.some((feature: { id: number }) => feature.id === id)).toBe(
+      visible,
+    );
+    await page.goto('/');
+    await expect(page.getByTestId('campus-map')).toHaveAttribute(
+      'data-features-loaded',
+      'true',
+    );
+    await page.getByRole('searchbox', { name: 'Buscar features' }).fill(name);
+    const result = page
+      .getByTestId('search-results')
+      .getByRole('button')
+      .filter({ hasText: name });
+    await expect(result).toHaveCount(visible ? 1 : 0);
+  }
+
+  await checkPublic(false);
+  const pending = await request.get(`${apiUrl}/admin/features/pending`, {
+    headers,
+  });
+  expect((await pending.json()).features).toEqual(
+    expect.arrayContaining([expect.objectContaining({ id })]),
+  );
+  expect(
+    (
+      await request.post(`${apiUrl}/admin/features/${id}/approve`, { headers })
+    ).status(),
+  ).toBe(200);
+  await checkPublic(true);
+  expect(
+    (
+      await request.patch(`${apiUrl}/features/${id}`, {
+        headers,
+        data: { description: 'Revisar alteração' },
+      })
+    ).status(),
+  ).toBe(200);
+  await checkPublic(false);
+  expect(
+    (
+      await request.post(`${apiUrl}/admin/features/${id}/reject`, {
+        headers,
+        data: { reason: 'Necessita correção' },
+      })
+    ).status(),
+  ).toBe(200);
+  await checkPublic(false);
+  const editable = await request.get(`${apiUrl}/features/editable`, {
+    headers,
+  });
+  expect((await editable.json()).features).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ id, status: 'rejected' }),
+    ]),
+  );
+});
+
+test('API real: token inválido no mapa preserva desenho e pede novo login', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.evaluate(() =>
+    localStorage.setItem('campus-map.session-token', 'invalid-token'),
+  );
+  await page.reload();
+  const map = page.getByTestId('campus-map');
+  await expect(map).toHaveAttribute('data-features-loaded', 'true');
+  await page
+    .getByRole('button', { name: 'Iniciar desenho', exact: true })
+    .click();
+  const box = await map.boundingBox();
+  if (!box) throw new Error('Mapa não está visível');
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  const form = page.getByTestId('feature-form');
+  await form.getByLabel('Nome').fill('Rascunho preservado');
+  await form.getByRole('button', { name: 'Salvar feature' }).click();
+  await expect(page.getByTestId('feature-save-error')).toContainText(
+    'Sessão expirada ou inválida',
+  );
+  await expect(
+    page.getByRole('button', { name: 'Entrar', exact: true }),
+  ).toBeVisible();
+  await expect(form.getByLabel('Nome')).toHaveValue('Rascunho preservado');
+  await expect(
+    form.getByRole('button', { name: 'Salvar feature' }),
+  ).toBeDisabled();
+});
+
+for (const role of ['editor', 'admin'] as const) {
+  test.describe(`sessão unificada ${role}`, () => {
+    test.use({ accountRole: role });
+    test('cria no mapa com autoria, reutiliza sessão e encerra acesso', async ({
+      page,
+      account,
+    }) => {
+      const name = `Mapa autenticado ${randomUUID()}`;
+      await page.goto('/');
+      const map = page.getByTestId('campus-map');
+      await expect(map).toHaveAttribute('data-features-loaded', 'true');
+      await page
+        .getByRole('button', { name: 'Iniciar desenho', exact: true })
+        .click();
+      const box = await map.boundingBox();
+      if (!box) throw new Error('Mapa não está visível');
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+      const form = page.getByTestId('feature-form');
+      await form.getByLabel('Nome').fill(name);
+      await expect(
+        form.getByRole('button', { name: 'Salvar feature' }),
+      ).toBeDisabled();
+      await page.getByLabel('Email', { exact: true }).fill(account.email);
+      await page.getByLabel('Senha', { exact: true }).fill(account.password);
+      await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+      await expect(form.getByLabel('Nome')).toHaveValue(name);
+      await form.getByRole('button', { name: 'Salvar feature' }).click();
+      await expect(page.getByTestId('feature-save-success')).toHaveText(
+        'Feature salva com sucesso. Aguardando aprovação para aparecer no mapa público.',
+      );
+      const row = await db('campus_features')
+        .where({ name, created_by: account.id })
+        .first();
+      expect(row).toMatchObject({ status: 'pending', created_by: account.id });
+      await page
+        .getByRole('link', { name: 'Editar features', exact: true })
+        .click();
+      await expect(
+        page.getByRole('article', { name, exact: true }),
+      ).toBeVisible();
+      await page.goto('/admin');
+      if (role === 'admin') {
+        await expect(
+          page.getByRole('article', { name, exact: true }),
+        ).toBeVisible();
+      } else {
+        await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+          'Acesso restrito a administradores.',
+        );
+        await expect(
+          page.getByRole('region', { name: 'Features pendentes' }),
+        ).toHaveCount(0);
+      }
+      await page.goto('/');
+      await expect(
+        page.getByRole('button', { name: 'Sair', exact: true }),
+      ).toBeVisible();
+      await page.getByRole('button', { name: 'Sair', exact: true }).click();
+      await page.goto('/features');
+      await expect(
+        page.getByRole('button', { name: 'Entrar', exact: true }),
+      ).toBeVisible();
+      await page.goto('/admin');
+      await expect(page).toHaveURL(/\/admin\/login$/);
+    });
+  });
+}
+
+for (const role of ['editor', 'admin'] as const) {
+  test.describe(`edição por ${role}`, () => {
+    test.use({ accountRole: role });
+    test('API real: lista permitida, formulário e persistência da edição', async ({
+      page,
+      request,
+      account,
+    }) => {
+      const ownName = `Própria ${randomUUID()}`;
+      const otherName = `Histórica ${randomUUID()}`;
+      const ids: number[] = [];
+      try {
+        for (const [name, createdBy] of [
+          [ownName, account.id],
+          [otherName, undefined],
+        ] as const) {
+          const feature = await createCampusFeature({
+            name,
+            createdBy,
+            category: 'building',
+            geometry: { type: 'Point', coordinates: [-60, -3] },
+          });
+          ids.push(feature.id);
+        }
+        await page.goto('/features');
+        await page.getByLabel('Email').fill(account.email);
+        await page.getByLabel('Senha', { exact: true }).fill(account.password);
+        await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+        await expect(
+          page.getByRole('article', { name: ownName, exact: true }),
+        ).toBeVisible();
+        const historical = page.getByRole('article', {
+          name: otherName,
+          exact: true,
+        });
+        if (role === 'editor') await expect(historical).toHaveCount(0);
+        else await expect(historical).toBeVisible();
+        const targetName = role === 'admin' ? otherName : ownName;
+        const targetId = role === 'admin' ? ids[1] : ids[0];
+        await page
+          .getByRole('article', { name: targetName, exact: true })
+          .getByRole('button', { name: 'Editar', exact: true })
+          .click();
+        await expect(page.getByTestId('geometry-preview')).toHaveCount(1);
+        await expect(
+          page.getByLabel('Pré-visualização editável da geometria'),
+        ).toBeVisible();
+        await page
+          .getByLabel('Nome', { exact: true })
+          .fill(`${targetName} editada`);
+        await page
+          .getByLabel('Descrição', { exact: true })
+          .fill('Descrição atualizada');
+        await page.getByLabel('Geometria (GeoJSON)').fill('não é JSON');
+        await page.getByRole('button', { name: 'Salvar alterações' }).click();
+        await expect(page.getByRole('main').getByRole('alert')).toContainText(
+          'JSON válido',
+        );
+        const geometry = { type: 'Point', coordinates: [-59.98, -3.09] };
+        await page
+          .getByLabel('Geometria (GeoJSON)')
+          .fill(JSON.stringify(geometry));
+        await page.getByRole('button', { name: 'Salvar alterações' }).click();
+        await expect(page.getByRole('status')).toContainText(
+          'Alterações salvas',
+        );
+        await page.reload();
+        await expect(
+          page.getByRole('article', {
+            name: `${targetName} editada`,
+            exact: true,
+          }),
+        ).toBeVisible();
+        const row = await db('campus_features')
+          .where({ id: targetId })
+          .select('*', db.raw('ST_AsGeoJSON(geometry)::json AS geometry'))
+          .first();
+        expect(row).toMatchObject({
+          name: `${targetName} editada`,
+          description: 'Descrição atualizada',
+          geometry,
+          status: 'pending',
+        });
+        const unauthenticated = await request.get(
+          `${apiUrl}/features/editable`,
+        );
+        expect(unauthenticated.status()).toBe(401);
+      } finally {
+        await db('campus_features').whereIn('id', ids).delete();
+      }
+    });
+  });
+}
+
+test('API real: login, curadoria, recarga e logout', async ({
+  page,
+  request,
+  account,
+}) => {
+  const login = await request.post(`${apiUrl}/auth/login`, {
+    data: { email: account.email, password: account.password },
+  });
+  expect(login.status()).toBe(200);
+  const { token } = await login.json();
+  const headers = { Authorization: `Bearer ${token}` };
+  const names = [
+    `E2E aprovação ${randomUUID()}`,
+    `E2E rejeição ${randomUUID()}`,
+  ];
+  const ids: number[] = [];
+  for (const name of names) {
+    const created = await request.post(`${apiUrl}/features`, {
+      headers,
+      data: {
+        name,
+        category: 'building',
+        geometry: { type: 'Point', coordinates: [-59.982, -3.095] },
+      },
+    });
+    expect(created.status()).toBe(201);
+    ids.push((await created.json()).id);
+  }
+
+  await page.goto('/admin');
+  await expect(page).toHaveURL(/\/admin\/login$/);
+  await page.getByLabel('Email').fill(account.email);
+  await page.getByLabel('Senha', { exact: true }).fill(account.password);
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin$/);
+  const approved = page.getByRole('article', { name: names[0], exact: true });
+  const rejected = page.getByRole('article', { name: names[1], exact: true });
+  await expect(approved).toBeVisible();
+  await expect(approved.getByTestId('geometry-preview')).toHaveCount(1);
+  await expect(rejected.getByTestId('geometry-preview')).toHaveCount(1);
+  await page.reload();
+  await expect(approved).toBeVisible();
+  await approved.getByRole('button', { name: 'Aprovar', exact: true }).click();
+  await expect(approved).toHaveCount(0);
+  await rejected.getByLabel('Justificativa').fill('Localização incorreta');
+  await rejected.getByRole('button', { name: 'Rejeitar', exact: true }).click();
+  await expect(rejected).toHaveCount(0);
+
+  const rows = await db('campus_features').whereIn('id', ids).orderBy('id');
+  expect(rows).toHaveLength(2);
+  expect(rows[0]).toMatchObject({
+    status: 'approved',
+    reviewed_by: account.id,
+    rejection_reason: null,
+  });
+  expect(rows[1]).toMatchObject({
+    status: 'rejected',
+    reviewed_by: account.id,
+    rejection_reason: 'Localização incorreta',
+  });
+  for (const row of rows) expect(row.reviewed_at).not.toBeNull();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Sair' })).toBeVisible();
+  await expect(approved).toHaveCount(0);
+  await expect(rejected).toHaveCount(0);
+  await page.getByRole('button', { name: 'Sair' }).click();
+  await expect(page).toHaveURL(/\/admin\/login$/);
+  await page.goto('/admin');
+  await expect(page).toHaveURL(/\/admin\/login$/);
+});
+
+test('API real: senha incorreta não autentica', async ({ page, account }) => {
+  await page.goto('/admin/login');
+  await page.getByLabel('Email').fill(account.email);
+  await page.getByLabel('Senha', { exact: true }).fill('senha-incorreta');
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+    'Credenciais inválidas.',
+  );
+  await page.goto('/admin');
+  await expect(page).toHaveURL(/\/admin\/login$/);
+});
+
+test.describe('editor', () => {
+  test.use({ accountRole: 'editor' });
+  test('API real: editor não acessa curadoria', async ({
+    page,
+    request,
+    account,
+  }) => {
+    await page.goto('/admin/login');
+    await page.getByLabel('Email').fill(account.email);
+    await page.getByLabel('Senha', { exact: true }).fill(account.password);
+    await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+    await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+      'Acesso restrito a administradores.',
+    );
+    const login = await request.post(`${apiUrl}/auth/login`, {
+      data: { email: account.email, password: account.password },
+    });
+    expect(login.status()).toBe(200);
+    const { token } = await login.json();
+    const pending = await request.get(`${apiUrl}/admin/features/pending`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(pending.status()).toBe(403);
+    await page.goto('/admin');
+    await expect(page).toHaveURL(/\/admin\/login$/);
+  });
+});

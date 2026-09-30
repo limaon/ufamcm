@@ -3,6 +3,8 @@
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "baseUrl": ".",
+    "paths": { "@campus-map/shared": ["../../packages/shared/src/index.ts"] },
     "outDir": "dist"
   },
   "include": ["src/**/*.ts"]

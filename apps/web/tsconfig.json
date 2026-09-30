@@ -4,6 +4,8 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "module": "esnext",
     "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": { "@campus-map/shared": ["../../packages/shared/src/index.ts"] },
     "jsx": "preserve",
     "incremental": true,
     "plugins": [{ "name": "next" }]
