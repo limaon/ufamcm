@@ -1,6 +1,6 @@
 /**
  * Cria a tabela de elementos geograficos do campus.
- * @param { import ('knex'.Knex) } knex
+ * @param {import('knex').Knex} knex
  */
 exports.up = async function (knex) {
   await knex.schema.createTable('campus_features', (table) => {
@@ -16,6 +16,7 @@ exports.up = async function (knex) {
 
     table.specificType('geometry', 'geometry(Geometry, 4326)').notNullable();
 
+    // Mantido por compatibilidade com bancos migrados; corrigido pela migration 003.
     table.timestamp(true, true);
   });
 

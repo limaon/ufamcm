@@ -84,4 +84,28 @@ describe('POST /auth/login', () => {
       error: 'Token inválido',
     });
   });
+
+  it('impede um editor de listar ou decidir pendências administrativas', async () => {
+    const login = await request(app)
+      .post('/auth/login')
+      .send({ email, password: 'senha-segura-123' });
+    const authorization = `Bearer ${login.body.token}`;
+    expect(
+      (
+        await request(app)
+          .get('/admin/features/pending')
+          .set('Authorization', authorization)
+      ).status,
+    ).toBe(403);
+    for (const decision of ['approve', 'reject']) {
+      expect(
+        (
+          await request(app)
+            .post(`/admin/features/1/${decision}`)
+            .set('Authorization', authorization)
+            .send({ reason: 'Teste' })
+        ).status,
+      ).toBe(403);
+    }
+  });
 });

@@ -7,12 +7,10 @@ import { apiUrl, getToken, clearToken } from '../session';
 import GeometryPreview from '../components/GeometryPreview';
 import type { EditableCampusFeature } from '@campus-map/shared';
 
-type PendingFeature = EditableCampusFeature;
-
 export default function AdminPage() {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
-  const [features, setFeatures] = useState<PendingFeature[]>([]);
+  const [features, setFeatures] = useState<EditableCampusFeature[]>([]);
   const [reasons, setReasons] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);

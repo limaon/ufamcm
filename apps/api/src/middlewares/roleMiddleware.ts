@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 
-type UserRole = 'editor' | 'admin';
+import type { UserRole } from '@campus-map/shared';
 
 export function requireRole(...allowedRoles: UserRole[]) {
   return (request: Request, response: Response, next: NextFunction) => {

@@ -3,15 +3,17 @@
 import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
 import { apiUrl, getToken, saveToken, clearToken } from '../session';
-import GeometryPreview, { type Geometry } from '../components/GeometryPreview';
-import type { EditableCampusFeature } from '@campus-map/shared';
-
-type EditableFeature = EditableCampusFeature;
+import FeatureEditor from './FeatureEditor';
+import LoginForm from '../components/LoginForm';
+import type {
+  EditableCampusFeature,
+  FeatureResponse,
+} from '@campus-map/shared';
 
 export default function FeaturesPage() {
   const [token, setToken] = useState<string | null>(null);
-  const [features, setFeatures] = useState<EditableFeature[]>([]);
-  const [selected, setSelected] = useState<EditableFeature | null>(null);
+  const [features, setFeatures] = useState<EditableCampusFeature[]>([]);
+  const [selected, setSelected] = useState<EditableCampusFeature | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -44,14 +46,17 @@ export default function FeaturesPage() {
     throw new Error('Não foi possível concluir a operação. Tente novamente.');
   }
 
-  async function load(accessToken: string, signal?: AbortSignal) {
+  async function loadEditableFeatures(
+    accessToken: string,
+    signal?: AbortSignal,
+  ) {
     const response = await fetch(`${apiUrl}/features/editable`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       signal,
     });
     if (signal?.aborted) return;
     await checkResponse(response);
-    const data = await response.json();
+    const data: { features: EditableCampusFeature[] } = await response.json();
     if (signal?.aborted) return;
     setFeatures(data.features);
     setToken(accessToken);
@@ -62,7 +67,7 @@ export default function FeaturesPage() {
     async function restore() {
       try {
         const saved = getToken();
-        if (saved) await load(saved, controller.signal);
+        if (saved) await loadEditableFeatures(saved, controller.signal);
       } catch {
         if (!controller.signal.aborted)
           setError('Não foi possível restaurar a sessão. Entre novamente.');
@@ -74,40 +79,12 @@ export default function FeaturesPage() {
     return () => controller.abort();
   }, []);
 
-  async function login(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    setBusy(true);
-    setError('');
-    try {
-      const response = await fetch(`${apiUrl}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: data.get('email'),
-          password: data.get('password'),
-        }),
-      });
-      if (response.status === 401) throw new Error('Credenciais inválidas.');
-      await checkResponse(response);
-      const authentication = await response.json();
-      saveToken(authentication.token);
-      form.reset();
-      await load(authentication.token);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Erro de conexão.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function refresh() {
     if (!token) return;
     setBusy(true);
     setError('');
     try {
-      await load(token);
+      await loadEditableFeatures(token);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Erro de conexão.');
     } finally {
@@ -144,11 +121,9 @@ export default function FeaturesPage() {
         }),
       });
       await checkResponse(response);
-      const { feature } = await response.json();
+      const { feature }: FeatureResponse = await response.json();
       setFeatures((current) =>
-        current.map((item) =>
-          item.id === selected.id ? { ...item, ...feature, geometry } : item,
-        ),
+        current.map((item) => (item.id === selected.id ? feature : item)),
       );
       setSelected(null);
       setMessage(
@@ -169,28 +144,16 @@ export default function FeaturesPage() {
       {error && <p role="alert">{error}</p>}
       <p role="status">{busy ? 'Processando...' : message}</p>
       {!token ? (
-        <form onSubmit={login}>
-          <fieldset disabled={busy} style={{ display: 'grid', gap: 8 }}>
-            <legend>Entrar para editar</legend>
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="username"
-              required
-            />
-            <label htmlFor="password">Senha</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-            />
-            <button>Entrar</button>
-          </fieldset>
-        </form>
+        <LoginForm
+          idPrefix="edit"
+          legend="Entrar para editar"
+          disabled={busy}
+          onAuthenticated={async ({ token }) => {
+            setError('');
+            saveToken(token);
+            await loadEditableFeatures(token);
+          }}
+        />
       ) : (
         <>
           <button disabled={busy} onClick={refresh}>
@@ -200,74 +163,19 @@ export default function FeaturesPage() {
             Sair
           </button>
           {selected ? (
-            <form key={selected.id} onSubmit={save}>
-              <h2>Editar: {selected.name}</h2>
-              <p>
-                Salvar retorna a feature para pendente e remove a revisão
-                anterior.
-              </p>
-              <GeometryPreview
-                geometry={(() => {
-                  try {
-                    return JSON.parse(geometryDraft);
-                  } catch {
-                    return null;
-                  }
-                })()}
-                category={selected.category}
-                editable
-                onGeometryChange={(updated: Geometry) => {
-                  setGeometryDraft(JSON.stringify(updated, null, 2));
-                }}
-              />
-              <fieldset disabled={busy} style={{ display: 'grid', gap: 8 }}>
-                <legend>Dados da feature</legend>
-                <label htmlFor="name">Nome</label>
-                <input
-                  id="name"
-                  name="name"
-                  defaultValue={selected.name}
-                  required
-                />
-                <label htmlFor="category">Categoria</label>
-                <input
-                  id="category"
-                  name="category"
-                  defaultValue={selected.category}
-                  required
-                />
-                <label htmlFor="description">Descrição</label>
-                <textarea
-                  id="description"
-                  name="description"
-                  defaultValue={selected.description ?? ''}
-                />
-                <label htmlFor="geometry">Geometria (GeoJSON)</label>
-                <textarea
-                  id="geometry"
-                  name="geometry"
-                  rows={8}
-                  value={geometryDraft}
-                  onChange={(event) => setGeometryDraft(event.target.value)}
-                  required
-                />
-                <p>
-                  Point, LineString ou Polygon; coordenadas em longitude e
-                  latitude.
-                </p>
-                <button type="submit">Salvar alterações</button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelected(null);
-                    setGeometryDraft('');
-                    setError('');
-                  }}
-                >
-                  Cancelar
-                </button>
-              </fieldset>
-            </form>
+            <FeatureEditor
+              key={selected.id}
+              feature={selected}
+              busy={busy}
+              geometryDraft={geometryDraft}
+              onGeometryDraftChange={setGeometryDraft}
+              onSubmit={save}
+              onCancel={() => {
+                setSelected(null);
+                setGeometryDraft('');
+                setError('');
+              }}
+            />
           ) : (
             <section aria-label="Features editáveis">
               {!features.length && (

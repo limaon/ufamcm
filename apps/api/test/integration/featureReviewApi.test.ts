@@ -82,6 +82,14 @@ describe('curadoria administrativa de features', () => {
       reviewed_by: adminId,
     });
     expect(reviewed.reviewed_at).not.toBeNull();
+
+    const repeated = await request(app)
+      .post(`/admin/features/${featureId}/approve`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(repeated.status).toBe(404);
+    expect(
+      await db('campus_features').where({ id: featureId }).first(),
+    ).toEqual(reviewed);
   });
 
   it('rejeita uma feature com justificativa', async () => {

@@ -32,7 +32,6 @@ O banco próprio será a fonte oficial das features colaborativas. OSM será usa
 - Será necessário manter contratos claros entre frontend e backend.
 - O proxy reverso, HTTPS, CI/CD e políticas de produção serão definidos na etapa de implantação, não na primeira fatia local.
 
-
 # Cronograma inicial a ser seguido
 
 1. Monorepo com frontend e API.
@@ -79,9 +78,10 @@ O banco próprio será a fonte oficial das features colaborativas. OSM será usa
 33. JWT.
 34. Logout.
 35. RBAC:
-   - Público.
-   - Editor.
-   - Administrador.
+
+- Público.
+- Editor.
+- Administrador.
 
 ### Curadoria
 
@@ -118,4 +118,3 @@ pending -> rejected
 54. Backup do banco.
 55. CI/CD.
 56. Acessibilidade e responsividade.
-

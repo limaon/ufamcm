@@ -8,10 +8,7 @@ import Modify from 'ol/interaction/Modify.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
 import VectorLayer from 'ol/layer/Vector.js';
 import VectorSource from 'ol/source/Vector.js';
-import Fill from 'ol/style/Fill.js';
-import Stroke from 'ol/style/Stroke.js';
-import Style from 'ol/style/Style.js';
-import { getCategoryColor } from './featureStyles';
+import { getFeatureStyle } from './featureStyles';
 import type { FeatureGeometry } from '@campus-map/shared';
 
 export type Geometry = FeatureGeometry;
@@ -46,16 +43,13 @@ export default function GeometryPreview({
       return;
     }
     const source = new VectorSource({ features: [feature] });
-    const color = getCategoryColor(category);
+    feature.set('category', category);
     const map = new Map({
       target: target.current,
       layers: [
         new VectorLayer({
           source,
-          style: new Style({
-            fill: new Fill({ color: `${color}55` }),
-            stroke: new Stroke({ color, width: 3 }),
-          }),
+          style: getFeatureStyle,
         }),
       ],
       view: new View({ center: [0, 0], zoom: 2 }),

@@ -1,21 +1,17 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../lib/authConfig.js';
-
-type AuthenticatedUser = {
-  id: number;
-  role: 'editor' | 'admin';
-};
+import type { AuthClaims, UserRole } from '@campus-map/shared';
 
 declare global {
   namespace Express {
     interface Request {
-      auth?: AuthenticatedUser;
+      auth?: AuthClaims;
     }
   }
 }
 
-function isRole(value: unknown): value is AuthenticatedUser['role'] {
+function isRole(value: unknown): value is UserRole {
   return value === 'editor' || value === 'admin';
 }
 

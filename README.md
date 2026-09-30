@@ -14,6 +14,7 @@ Plataforma web GIS colaborativa do campus Sen. Arthur Virgílio Filho.
 npm install
 cp .env.example .env
 docker compose -f infra/docker-compose.yml up -d
+npx knex --knexfile apps/api/knexfile.cjs migrate:latest
 ```
 
 ## Desenvolvimento
@@ -26,11 +27,50 @@ npm run dev
 - API: http://localhost:3001/health
 - Banco: localhost:5432
 
+## Organização do código
+
+- `apps/api/src/app.ts`: configuração HTTP e composição das rotas.
+- `apps/api/src/routes`: autenticação, features e curadoria.
+- `apps/api/src/models`: consultas e alterações no banco.
+- `apps/web/src/app/components/LoginForm.tsx`: login compartilhado entre as telas.
+- `apps/web/src/app/features/FeatureEditor.tsx`: formulário e preview da edição.
+- `packages/shared/src/index.ts`: contratos públicos usados pela API e pelo frontend.
+
+## Verificações da base
+
+```bash
+npm run typecheck
+npm run format:check
+npm run test --workspace @campus-map/api -- --runInBand
+npm run test --workspace @campus-map/web -- --runInBand
+npm run build
+```
+
+Os testes de integração da API precisam de PostgreSQL/PostGIS com as migrations
+aplicadas. Defina `DATABASE_URL` para usar um banco de testes. Para executar todos
+os E2E, mantenha frontend e API ativos, apontando para o mesmo banco dos testes:
+
+```bash
+npm run test:e2e --workspace @campus-map/web -- --workers=1
+```
+
+### Migrations
+
+A sequência histórica é intencional: a migration `003` corrige os timestamps
+criados pela `002`. O rollback da `001` preserva o PostGIS, pois a extensão pode
+ser preexistente e compartilhada com outras extensões. As demais migrations
+revertem as estruturas da aplicação.
+
+O ciclo `migrate:latest` → `migrate:rollback --all` → `migrate:latest` foi
+verificado em banco temporário. O rollback completo apaga as tabelas da aplicação;
+use um banco descartável para repetir essa verificação.
+
 ## Administrador inicial
 
 Com o banco ativo, execute na raiz:
 
 ```bash
+docker compose -f infra/docker-compose.yml up -d --wait
 npx knex --knexfile apps/api/knexfile.cjs migrate:latest
 read -r -p 'Nome: ' ADMIN_NAME
 read -r -p 'Email: ' ADMIN_EMAIL

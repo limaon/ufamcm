@@ -1,11 +1,32 @@
 import { db } from '../lib/db.js';
 import type { UpdateCampusFeatureInput } from '../schemas/campusFeatureSchema.js';
-import type { FeatureGeometry } from '@campus-map/shared';
+import type {
+  AuthClaims,
+  CreateFeatureRequest,
+  FeatureStatus,
+} from '@campus-map/shared';
+
+const featureColumns = [
+  'id',
+  'name',
+  'category',
+  'description',
+  'status',
+  'created_by',
+  'created_at',
+  'updated_at',
+];
+
+function featureQuery() {
+  return db('campus_features')
+    .select(featureColumns)
+    .select(db.raw('ST_AsGeoJSON(geometry)::json AS geometry'));
+}
 
 export async function updateCampusFeature(
   id: number,
   input: UpdateCampusFeatureInput,
-  actor: { id: number; role: 'editor' | 'admin' },
+  actor: AuthClaims,
 ) {
   return db.transaction(async (trx) => {
     const current = await trx('campus_features')
@@ -36,33 +57,17 @@ export async function updateCampusFeature(
         updated_at: trx.fn.now(),
       })
       .returning([
-        'id',
-        'name',
-        'category',
-        'description',
-        'status',
-        'created_by',
-        'updated_at',
+        ...featureColumns,
+        trx.raw('ST_AsGeoJSON(geometry)::json AS geometry'),
       ]);
     return { outcome: 'updated' as const, feature };
   });
 }
 
 export async function listCampusFeatures(
-  filters: { createdBy?: number; status?: 'approved' } = {},
+  filters: { createdBy?: number; status?: FeatureStatus } = {},
 ) {
-  const query = db('campus_features')
-    .select(
-      'id',
-      'name',
-      'category',
-      'description',
-      'status',
-      'created_at',
-      'updated_at',
-    )
-    .select(db.raw('ST_AsGeoJSON(geometry)::json AS geometry'))
-    .orderBy('id');
+  const query = featureQuery().orderBy('id');
   if (filters.createdBy !== undefined)
     query.where({ created_by: filters.createdBy });
   if (filters.status !== undefined) query.where({ status: filters.status });
@@ -70,27 +75,12 @@ export async function listCampusFeatures(
 }
 
 export async function listPendingCampusFeatures() {
-  return db('campus_features')
-    .select(
-      'id',
-      'name',
-      'category',
-      'description',
-      'status',
-      'created_by',
-      'created_at',
-      'updated_at',
-    )
-    .select(db.raw('ST_AsGeoJSON(geometry)::json AS geometry'))
+  return featureQuery()
     .where({ status: 'pending' })
     .orderBy('created_at', 'asc');
 }
 
-type CreateCampusFeatureInput = {
-  name: string;
-  category: string;
-  description?: string;
-  geometry: FeatureGeometry;
+type CreateCampusFeatureInput = CreateFeatureRequest & {
   createdBy?: number;
 };
 

@@ -21,7 +21,8 @@ export async function apiRequest<T>(
   let response: Response;
   try {
     response = await fetch(input, init);
-  } catch {
+  } catch (cause) {
+    if (init?.signal?.aborted) throw cause;
     throw new Error(
       'Não foi possível conectar à API. Verifique se ela está ativa.',
     );

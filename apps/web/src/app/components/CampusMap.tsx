@@ -17,7 +17,7 @@ import Fill from 'ol/style/Fill.js';
 import Stroke from 'ol/style/Stroke.js';
 import 'ol/ol.css';
 import LayerControls from './LayerControls';
-import { getCategoryColor } from './featureStyles';
+import { getFeatureStyle } from './featureStyles';
 import DrawControls, { type GeometryType } from './DrawControls';
 import SearchControls, { type SearchResult } from './SearchControls';
 import { apiUrl, getToken, clearToken, useSessionToken } from '../session';
@@ -65,47 +65,7 @@ export default function CampusMap() {
 
     const featureLayer = new VectorLayer({
       source: featureSource,
-      style: (feature) => {
-        const color = getCategoryColor(feature.get('category'));
-        const geometryType = feature.getGeometry()?.getType();
-
-        if (
-          geometryType === 'LineString' ||
-          geometryType === 'MultiLineString'
-        ) {
-          return new Style({
-            stroke: new Stroke({
-              color,
-              width: 4,
-            }),
-          });
-        }
-
-        if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
-          return new Style({
-            fill: new Fill({
-              color: `${color}40`,
-            }),
-            stroke: new Stroke({
-              color,
-              width: 2,
-            }),
-          });
-        }
-
-        return new Style({
-          image: new CircleStyle({
-            radius: 8,
-            fill: new Fill({
-              color,
-            }),
-            stroke: new Stroke({
-              color: '#ffffff',
-              width: 2,
-            }),
-          }),
-        });
-      },
+      style: getFeatureStyle,
     });
 
     const baseLayer = new TileLayer({

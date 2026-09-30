@@ -1,4 +1,6 @@
-export type GeometryType = 'Point' | 'LineString' | 'Polygon';
+import type { FeatureGeometryType } from '@campus-map/shared';
+
+export type GeometryType = FeatureGeometryType;
 
 type DrawControlsProps = {
   geometryType: GeometryType;

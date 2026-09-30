@@ -8,6 +8,7 @@ exports.up = async function (knex) {
 /**
  * @param { import ('knex').Knex } knex
  */
-exports.down = async function (knex) {
-  await knex.raw('DROP EXTENSION IF EXISTS postgis');
-};
+// A extensao pode existir antes da aplicacao e ser usada por outras extensoes
+// (como postgis_topology na imagem Docker). O rollback remove as tabelas da
+// aplicacao, mas nao assume propriedade sobre essa infraestrutura compartilhada.
+exports.down = async function () {};

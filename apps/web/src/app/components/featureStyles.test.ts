@@ -1,4 +1,6 @@
-import { getCategoryColor } from './featureStyles.js';
+import { getCategoryColor, getFeatureStyle } from './featureStyles.js';
+import Feature from 'ol/Feature.js';
+import Point from 'ol/geom/Point.js';
 
 describe('getCategoryColor', () => {
   it('usa azul para edificações', () => {
@@ -20,4 +22,12 @@ describe('getCategoryColor', () => {
   it('usa cinza para categorias desconhecidas', () => {
     expect(getCategoryColor('unknown')).toBe('#6b7280');
   });
+});
+
+it('inclui um símbolo visível para pontos no mapa e no preview', () => {
+  const feature = new Feature({
+    geometry: new Point([0, 0]),
+    category: 'tree',
+  });
+  expect(getFeatureStyle(feature).getImage()).not.toBeNull();
 });

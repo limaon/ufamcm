@@ -24,6 +24,9 @@ describe('API do Campus Map', () => {
   });
 
   afterAll(async () => {
+    await db('campus_features')
+      .whereIn('created_by', db('users').select('id').where({ email }))
+      .delete();
     await db('users').where({ email }).delete();
     await db.destroy();
   });
@@ -118,7 +121,5 @@ describe('API do Campus Map', () => {
       status: 'pending',
       created_by: expect.any(Number),
     });
-
-    await db('campus_features').where({ id: response.body.id }).delete();
   });
 });

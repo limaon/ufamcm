@@ -1,6 +1,6 @@
 import { db } from '../lib/db.js';
 
-type UserRole = 'editor' | 'admin';
+import type { UserRole } from '@campus-map/shared';
 
 type CreateUserRecord = {
   name: string;

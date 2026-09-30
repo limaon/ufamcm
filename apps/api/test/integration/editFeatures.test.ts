@@ -66,6 +66,14 @@ describe('edição autorizada de features', () => {
       .set('Authorization', `Bearer ${editorToken}`)
       .send({ name: 'Nome atualizado' });
     expect(response.status).toBe(200);
+    expect(response.body.feature).toMatchObject({
+      id,
+      name: 'Nome atualizado',
+      created_by: editorId,
+      created_at: expect.any(String),
+      updated_at: expect.any(String),
+      geometry: { type: 'Point', coordinates: [-59.982, -3.095] },
+    });
     const row = await db('campus_features').where({ id }).first();
     expect(row).toMatchObject({
       name: 'Nome atualizado',
@@ -155,6 +163,11 @@ describe('edição autorizada de features', () => {
       .get('/features/editable')
       .set('Authorization', `Bearer ${editorToken}`);
     expect(editor.status).toBe(200);
+    expect(editor.body.features).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: own, created_by: editorId }),
+      ]),
+    );
     expect(
       editor.body.features.map((feature: { id: number }) => feature.id),
     ).toContain(own);

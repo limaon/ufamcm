@@ -84,7 +84,9 @@ export type CreateFeatureRequest = {
   geometry: FeatureGeometry;
 };
 
-export type UpdateFeatureRequest = Partial<CreateFeatureRequest> & {
+export type UpdateFeatureRequest = Partial<
+  Omit<CreateFeatureRequest, 'description'>
+> & {
   description?: string | null;
 };
 
